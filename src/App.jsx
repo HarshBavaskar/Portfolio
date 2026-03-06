@@ -533,7 +533,7 @@ export default function App() {
         <section className="section container">
           <div className="section-header-wrap">
             <span className="mono-small">// CHRONOLOGY</span>
-            <h2 className="title-medium">Leadership</h2>
+            <h2 className="title-medium">Leadership and History</h2>
           </div>
 
           <div className="timeline-container">

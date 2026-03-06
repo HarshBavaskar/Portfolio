@@ -34,7 +34,7 @@ function ComplexGeometry() {
           distortion={0.5}
           distortionScale={0.5}
           temporalDistortion={0.1}
-          color="#c084fc"
+          color="#4f009e"
           attenuationDistance={2}
           attenuationColor="#ffffff"
           clearcoat={1}
@@ -42,7 +42,7 @@ function ComplexGeometry() {
       </mesh>
       <mesh scale={1.7}>
         <icosahedronGeometry args={[1, 1]} />
-        <meshBasicMaterial color="#2dd4bf" wireframe transparent opacity={0.1} />
+        <meshBasicMaterial color="#2d9fd4" wireframe transparent opacity={0.1} />
       </mesh>
     </Float>
   );
@@ -70,7 +70,7 @@ function WebGLBackground() {
         <color attach="background" args={['#030303']} />
         <ambientLight intensity={0.5} />
         <directionalLight position={[10, 10, 10]} intensity={1} color="#ffffff" />
-        <pointLight position={[-10, -10, -10]} intensity={2} color="#c084fc" />
+        <pointLight position={[-10, -10, -10]} intensity={2} color="#8000ff" />
 
         <Stars radius={100} depth={50} count={3000} factor={4} saturation={0} fade speed={1} />
         <Sparkles count={200} scale={10} size={2} speed={0.4} opacity={0.2} color="#2dd4bf" />
@@ -236,11 +236,11 @@ function HorizontalProjects() {
   const x = useTransform(scrollYProgress, [0, 1], ['0%', '-65%']); // Adjust based on # of items
 
   const PROJECTS = [
-    { title: 'NASA HERC Rover Challenge', role: 'Rover Construction Lead', delay: '01', tech: ['Mechanical', 'Controls', 'Sensors'] },
-    { title: 'Polaris — AI Early Warning', role: 'Lead AI Engineer', delay: '02', tech: ['CNN', 'LSTM', 'Python', 'React'] },
-    { title: 'Block Ballot', role: 'Full Stack Blockchain', delay: '03', tech: ['Spring Boot', 'Cryptography', 'Merkle Tree'] },
-    { title: 'PRISMRx — Polypharmacy AI', role: 'Lead Developer', delay: '04', tech: ['Machine Learning', 'Data Pipelines', 'React'] },
-    { title: 'AIRO Auto-Robot', role: 'Hardware Integration', delay: '05', tech: ['Arduino', 'ESP32', 'OpenCV'] }
+    { title: 'NASA HERC Rover Challenge 2025', description: "Organized by NASA", role: 'Rover Construction Lead', delay: '01', tech: ['Mechanical', 'Controls', 'Sensors'] },
+    { title: 'Polaris', description: "AI Early Warning and Alert System", role: 'Lead AI Engineer', delay: '02', tech: ['CNN', 'LSTM', 'Python', 'React'] },
+    { title: 'Block Ballot', description: "Blockchain-secured Voting System", role: 'Full Stack Blockchain', delay: '03', tech: ['Spring Boot', 'Cryptography', 'Merkle Tree'] },
+    { title: 'PRISMRx', description: "Polypharmacy AI Analyzer", role: 'Lead Developer', delay: '04', tech: ['Machine Learning', 'Data Pipelines', 'React'] },
+    { title: 'AIROBOT', description: "AI Powered Autonomous Home Robot", role: 'Hardware Integration', delay: '05', tech: ['Arduino', 'ESP32', 'OpenCV'] }
   ];
 
   return (
@@ -258,6 +258,7 @@ function HorizontalProjects() {
                 </div>
                 <div className="project-bottom">
                   <div className="project-role">{proj.role}</div>
+                  <h6>{proj.description}</h6>
                   <h3>{proj.title}</h3>
                   <div className="project-tech">
                     {proj.tech.map((t, idx) => (
@@ -342,7 +343,7 @@ export default function App() {
         <section className="hero" ref={heroRef}>
           <header className="hero-header">
             <MagneticWrapper className="logo hover-target">
-              <span className="logo-dot" /> HB.
+              <span className="logo-dot" /> Harsh.
             </MagneticWrapper>
             <MagneticWrapper className="hover-target">
               <a href="mailto:hbavaskar6@gmail.com" className="availability">
@@ -358,8 +359,8 @@ export default function App() {
                 initial="hidden"
                 animate={hasLoaded ? "visible" : "hidden"}
               >
-                <div className="hero-line">{splitText('CREATIVE')}</div>
-                <div className="hero-line">{splitText('ENGINEER')}</div>
+                <div className="hero-line">{splitText('HARSH')}</div>
+                <div className="hero-line">{splitText('BAVASKAR.')}</div>
               </motion.h1>
             </div>
 
@@ -369,8 +370,7 @@ export default function App() {
               animate={hasLoaded ? { opacity: 1, x: 0 } : {}}
               transition={{ delay: 1, duration: 0.8 }}
             >
-              I bridge the gap between rigorous AI architecture and high-end,
-              visceral frontend experiences. Building digital ecosystems that are immersive, scalable, and intelligent.
+              AI/ML student and robotics builder focused on turning ideas into real, working systems. I build intelligent software, computer vision pipelines, and embedded robotics, combining AI models, scalable backends, and hardware integration to solve real-world problems.
             </motion.p>
           </motion.div>
 
@@ -380,9 +380,6 @@ export default function App() {
             animate={hasLoaded ? { opacity: 1 } : {}}
             transition={{ delay: 1.5, duration: 1 }}
           >
-            <span className="mono-small" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>
-              SCROLL TO EXPLORE
-            </span>
             <div className="scroll-line">
               <div className="scroll-progress-line" />
             </div>
@@ -410,6 +407,10 @@ export default function App() {
                 <span className="tech-tag">YOLOv8</span>
                 <span className="tech-tag">DeepSORT</span>
                 <span className="tech-tag">OpenCV</span>
+                <span className="tech-tag">LSTM</span>
+                <span className="tech-tag">CNN</span>
+                <span className="tech-tag">Transformers</span>
+                <span className="tech-tag">RAG</span>
               </div>
             </div>
 
@@ -425,21 +426,25 @@ export default function App() {
                 <span className="tech-tag">Flask / Django</span>
                 <span className="tech-tag">MongoDB</span>
                 <span className="tech-tag">PostgreSQL</span>
+                <span className="tech-tag">Redis</span>
+                <span className="tech-tag">Docker</span>
+                <span className="tech-tag">Microsoft Azure</span>
+                <span className="tech-tag">HDFS</span>
               </div>
             </div>
 
             {/* Frontend Standard */}
             <div className="bento-item hover-target">
-              <div className="bento-icon-badge"><Cpu size={24} color="#f472b6" /></div>
-              <h3 className="bento-title">Frontend Prowess</h3>
-              <p className="bento-desc">React, WebGL, Framer Motion, GSAP, and Tailwind. Obsessed with 60FPS.</p>
+              <div className="bento-icon-badge"><Cpu size={24} color="#da72f4" /></div>
+              <h3 className="bento-title">Frontend </h3>
+              <p className="bento-desc">WebGL, Framer Motion, GSAP, Flutter, React (components, hooks, state), Vite, Tailwind CSS, HTML5, CSS3, Thymeleaf, Responsive UI, UI/UX Design</p>
             </div>
 
             {/* Hardware Standard */}
             <div className="bento-item hover-target">
               <div className="bento-icon-badge"><Bot size={24} color="#60a5fa" /></div>
-              <h3 className="bento-title">Hardware Integration</h3>
-              <p className="bento-desc">Arduino, ESP32, Raspberry Pi, Sensors, motor drivers, and low-level C++ embedded logic.</p>
+              <h3 className="bento-title">Hardware</h3>
+              <p className="bento-desc">Arduino, ESP32, Raspberry Pi, Motor drivers, Sensor integration (Ultrasonic, IR, LiDAR), Embedded system prototyping.</p>
             </div>
 
             {/* 3D Wide Card */}
@@ -468,7 +473,7 @@ export default function App() {
         <section className="section container">
           <div className="section-header-wrap">
             <span className="mono-small">// CHRONOLOGY</span>
-            <h2 className="title-medium">Leadership <br /> <span className="text-stroke">& History</span></h2>
+            <h2 className="title-medium">Leadership</h2>
           </div>
 
           <div className="timeline-container">
@@ -478,16 +483,16 @@ export default function App() {
             </AccordionItem>
             <AccordionItem year="2024—25" title="Rover Construction Lead">
               <div style={{ color: 'var(--secondary)', marginBottom: '0.5rem', fontWeight: 600 }}>Team MUSHAK — NASA HERC</div>
-              Directed a team of 18 members focusing on mechanical and electrical systems integration. Orchestrated the successful deployment of a rugged, complex rover capable of traversing aggressive extra-terrestrial mock terrains.
+              Led a team of 18 members focusing on mechanical and electrical systems integration. Orchestrated the successful deployment of a rugged, complex rover capable of traversing aggressive extra-terrestrial mock terrains.
             </AccordionItem>
             <AccordionItem year="2024—28" title="Computer Science Student">
-              <div style={{ color: '#f472b6', marginBottom: '0.5rem', fontWeight: 600 }}>Atlas Skilltech University</div>
+              <div style={{ color: '#f4be72', marginBottom: '0.5rem', fontWeight: 600 }}>Atlas Skilltech University</div>
               BTech Specialization in Artificial Intelligence & Machine Learning. Building comprehensive foundational knowledge in deep-learning mathematics, data structures, and systemic architecture.
             </AccordionItem>
             <AccordionItem year="AWARDS" title="NASA HERC Recognitions">
               <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
                 <div>
-                  <div style={{ color: '#fbbf24', fontSize: '1.5rem', fontWeight: 700 }}>5th Global Rank</div>
+                  <div style={{ color: '#fb4f24', fontSize: '1.5rem', fontWeight: 700 }}>5th Global Rank</div>
                   <div style={{ fontSize: '0.9rem' }}>RC Division at NASA HERC (2025)</div>
                 </div>
                 <div>
@@ -501,7 +506,7 @@ export default function App() {
 
         {/* ── FOOTER ── */}
         <footer className="footer container">
-          <div className="footer-big-text">HARSH</div>
+          <div className="footer-big-text">HARSH.</div>
           <div className="footer-bottom">
             <div className="footer-links">
               <MagneticWrapper className="hover-target">

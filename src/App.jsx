@@ -106,6 +106,7 @@ function WebGLBackground() {
   );
 }
 
+
 /* ──────────────────── CUSTOM TRAILING CURSOR ──────────────────── */
 
 function CustomCursor() {
@@ -237,9 +238,9 @@ function HorizontalProjects() {
 
   const PROJECTS = [
     { title: 'NASA HERC Rover Challenge 2025', description: "Organized by NASA", role: 'Rover Construction Lead', delay: '01', tech: ['Mechanical', 'Controls', 'Sensors'] },
-    { title: 'Polaris', description: "AI Early Warning and Alert System", role: 'Lead AI Engineer', delay: '02', tech: ['CNN', 'LSTM', 'Python', 'React'] },
-    { title: 'Block Ballot', description: "Blockchain-secured Voting System", role: 'Full Stack Blockchain', delay: '03', tech: ['Spring Boot', 'Cryptography', 'Merkle Tree'] },
-    { title: 'PRISMRx', description: "Polypharmacy AI Analyzer", role: 'Lead Developer', delay: '04', tech: ['Machine Learning', 'Data Pipelines', 'React'] },
+    { title: 'Polaris', description: "AI Early Warning and Alert System", role: 'Lead AI Engineer', delay: '02', tech: ['CNN', 'LSTM', 'Python', 'React'], github: 'https://github.com/HarshBavaskar/Polaris' },
+    { title: 'Block Ballot', description: "Blockchain-secured Voting System", role: 'Full Stack Blockchain', delay: '03', tech: ['Spring Boot', 'Cryptography', 'Merkle Tree'], github: 'https://github.com/HarshBavaskar/BlockBallot' },
+    { title: 'PRISMRx', description: "Polypharmacy AI Analyzer", role: 'Lead Developer', delay: '04', tech: ['Machine Learning', 'Data Pipelines', 'React'], github: 'https://github.com/HarshBavaskar/PrismRX-AI' },
     { title: 'AIROBOT', description: "AI Powered Autonomous Home Robot", role: 'Hardware Integration', delay: '05', tech: ['Arduino', 'ESP32', 'OpenCV'] }
   ];
 
@@ -249,27 +250,57 @@ function HorizontalProjects() {
         <motion.div style={{ x }} className="horizontal-scroll-wrap">
           <div style={{ paddingRight: '8vw' }} /> {/* Offset start */}
           {PROJECTS.map((proj, i) => (
-            <div key={i} className="project-card view-target">
-              <span className="project-bg-text">0{i + 1}</span>
-              <div className="project-content">
-                <div className="project-top">
-                  <span className="project-index">0{i + 1}</span>
-                  <span className="project-year">2024—25</span>
+            proj.github ? (
+              <a
+                key={i}
+                href={proj.github}
+                target="_blank"
+                rel="noreferrer"
+                className="project-card project-card-link view-target"
+              >
+                <span className="project-bg-text">0{i + 1}</span>
+                <div className="project-content">
+                  <div className="project-top">
+                    <span className="project-index">0{i + 1}</span>
+                    <span className="project-year">2024—25</span>
+                  </div>
+                  <div className="project-bottom">
+                    <div className="project-role">{proj.role}</div>
+                    <div className="project-link-hint">Check on GitHub</div>
+                    <h6>{proj.description}</h6>
+                    <h3>{proj.title}</h3>
+                    <div className="project-tech">
+                      {proj.tech.map((t, idx) => (
+                        <span key={idx} className="tech-tag">{t}</span>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-                <div className="project-bottom">
-                  <div className="project-role">{proj.role}</div>
-                  <h6>{proj.description}</h6>
-                  <h3>{proj.title}</h3>
-                  <div className="project-tech">
-                    {proj.tech.map((t, idx) => (
-                      <span key={idx} className="tech-tag">{t}</span>
-                    ))}
+              </a>
+            ) : (
+              <div key={i} className="project-card view-target">
+                <span className="project-bg-text">0{i + 1}</span>
+                <div className="project-content">
+                  <div className="project-top">
+                    <span className="project-index">0{i + 1}</span>
+                    <span className="project-year">2024—25</span>
+                  </div>
+                  <div className="project-bottom">
+                    <div className="project-role">{proj.role}</div>
+                    <h6>{proj.description}</h6>
+                    <h3>{proj.title}</h3>
+                    <div className="project-tech">
+                      {proj.tech.map((t, idx) => (
+                        <span key={idx} className="tech-tag">{t}</span>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            )
           ))}
           <div style={{ paddingRight: '10vw' }} /> {/* End buffer */}
+          
         </motion.div>
       </div>
     </div>
@@ -343,11 +374,11 @@ export default function App() {
         <section className="hero" ref={heroRef}>
           <header className="hero-header">
             <MagneticWrapper className="logo hover-target">
-              <span className="logo-dot" /> Harsh.
+              <span/> @Portfolio
             </MagneticWrapper>
             <MagneticWrapper className="hover-target">
               <a href="mailto:hbavaskar6@gmail.com" className="availability">
-                <span className="pulse" /> AVAILABLE FOR COLLABORATION
+                <span/> AVAILABLE FOR COLLABORATION
               </a>
             </MagneticWrapper>
           </header>
@@ -395,7 +426,7 @@ export default function App() {
 
           <div className="bento-grid">
             {/* AI/ML Large Card */}
-            <div className="bento-item bento-large code-target">
+            <div className="bento-item bento-tall code-target">
               <div className="bento-icon-badge"><BrainCircuit size={24} color="var(--primary)" /></div>
               <h3 className="bento-title">Artificial Intelligence & ML</h3>
               <p className="bento-desc" style={{ marginBottom: '1.5rem' }}>
@@ -414,8 +445,23 @@ export default function App() {
               </div>
             </div>
 
+
+            {/* Frontend Standard */}
+            <div className="bento-item hover-target">
+              <div className="bento-icon-badge"><Cpu size={24} color="#da72f4" /></div>
+              <h3 className="bento-title">Frontend </h3>
+              <p className="bento-desc">WebGL, Framer Motion, GSAP, Flutter, React (components, hooks, state), Vite, Tailwind CSS, HTML5, CSS3, Thymeleaf, Responsive UI, UI/UX Design</p>
+            </div>
+
+            {/* Hardware Standard */}
+            <div className="bento-item bento-wide hover-target">
+              <div className="bento-icon-badge"><Bot size={24} color="#60a5fa" /></div>
+              <h3 className="bento-title">Hardware</h3>
+              <p className="bento-desc">Arduino, ESP32, Raspberry Pi, Motor drivers, Sensor integration (Ultrasonic, IR, LiDAR), Embedded system prototyping.</p>
+            </div>
+
             {/* Backend Tall Card */}
-            <div className="bento-item bento-tall hover-target">
+            <div className="bento-item bento-wide hover-target">
               <div className="bento-icon-badge"><Database size={24} color="var(--secondary)" /></div>
               <h3 className="bento-title">Backend Architecture</h3>
               <p className="bento-desc">
@@ -433,22 +479,8 @@ export default function App() {
               </div>
             </div>
 
-            {/* Frontend Standard */}
-            <div className="bento-item hover-target">
-              <div className="bento-icon-badge"><Cpu size={24} color="#da72f4" /></div>
-              <h3 className="bento-title">Frontend </h3>
-              <p className="bento-desc">WebGL, Framer Motion, GSAP, Flutter, React (components, hooks, state), Vite, Tailwind CSS, HTML5, CSS3, Thymeleaf, Responsive UI, UI/UX Design</p>
-            </div>
-
-            {/* Hardware Standard */}
-            <div className="bento-item hover-target">
-              <div className="bento-icon-badge"><Bot size={24} color="#60a5fa" /></div>
-              <h3 className="bento-title">Hardware</h3>
-              <p className="bento-desc">Arduino, ESP32, Raspberry Pi, Motor drivers, Sensor integration (Ultrasonic, IR, LiDAR), Embedded system prototyping.</p>
-            </div>
-
             {/* 3D Wide Card */}
-            <div className="bento-item bento-wide hover-target">
+            <div className="bento-item bento-small hover-target">
               <div className="bento-icon-badge"><Shapes size={24} color="#fbbf24" /></div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
@@ -462,7 +494,7 @@ export default function App() {
 
         {/* ── HORIZONTAL PROJECTS ── */}
         <section className="section" style={{ padding: 0 }}>
-          <div className="container section-header-wrap" style={{ borderBottom: 'none', marginBottom: 0 }}>
+          <div className="container section-header-wrap featured-heading" style={{ borderBottom: 'none', marginBottom: 0 }}>
             <span className="mono-small">// SELECTED ARCHIVES</span>
             <h2 className="title-medium">Featured <br /> <span className="text-stroke">Engineering</span></h2>
           </div>
@@ -528,3 +560,9 @@ export default function App() {
     </>
   );
 }
+
+
+
+
+
+

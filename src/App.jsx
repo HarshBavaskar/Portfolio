@@ -249,8 +249,20 @@ const splitText = (text) => {
 
 function HorizontalProjects() {
   const targetRef = useRef(null);
+  const [isMobile, setIsMobile] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.matchMedia('(max-width: 768px), (hover: none) and (pointer: coarse)').matches;
+  });
   const { scrollYProgress } = useScroll({ target: targetRef });
   const x = useTransform(scrollYProgress, [0, 1], ['0%', '-65%']); // Adjust based on # of items
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 768px), (hover: none) and (pointer: coarse)');
+    const update = () => setIsMobile(mq.matches);
+    update();
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
+  }, []);
 
   const PROJECTS = [
     { title: 'NASA HERC Rover Challenge 2025', description: "Organized by NASA", role: 'Rover Construction Lead', delay: '01', tech: ['Mechanical', 'Controls', 'Sensors'] },
@@ -263,8 +275,8 @@ function HorizontalProjects() {
   return (
     <div ref={targetRef} className="horizontal-scroll-container">
       <div className="horizontal-scroll-sticky">
-        <motion.div style={{ x }} className="horizontal-scroll-wrap">
-          <div style={{ paddingRight: '8vw' }} /> {/* Offset start */}
+        <motion.div style={isMobile ? undefined : { x }} className="horizontal-scroll-wrap">
+          {!isMobile && <div style={{ paddingRight: '8vw' }} />} {/* Offset start */}
           {PROJECTS.map((proj, i) => (
             proj.github ? (
               <a
@@ -315,7 +327,7 @@ function HorizontalProjects() {
               </div>
             )
           ))}
-          <div style={{ paddingRight: '10vw' }} /> {/* End buffer */}
+          {!isMobile && <div style={{ paddingRight: '10vw' }} />} {/* End buffer */}
           
         </motion.div>
       </div>

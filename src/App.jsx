@@ -112,8 +112,22 @@ function WebGLBackground() {
 function CustomCursor() {
   const dotRef = useRef(null);
   const followerRef = useRef(null);
+  const [isMobileDevice, setIsMobileDevice] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.matchMedia('(max-width: 768px), (hover: none) and (pointer: coarse)').matches;
+  });
 
   useEffect(() => {
+    const mq = window.matchMedia('(max-width: 768px), (hover: none) and (pointer: coarse)');
+    const update = () => setIsMobileDevice(mq.matches);
+    update();
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
+  }, []);
+
+  useEffect(() => {
+    if (isMobileDevice) return;
+
     let mouse = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
     let dotPos = { x: mouse.x, y: mouse.y };
     let followerPos = { x: mouse.x, y: mouse.y };
@@ -169,7 +183,9 @@ function CustomCursor() {
       document.removeEventListener('mouseout', handleMouseOut);
       cancelAnimationFrame(raf);
     };
-  }, []);
+  }, [isMobileDevice]);
+
+  if (isMobileDevice) return null;
 
   return (
     <>

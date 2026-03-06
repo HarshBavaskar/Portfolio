@@ -919,7 +919,9 @@ h6 {
     overflow-x: auto;
     overflow-y: hidden;
     scroll-snap-type: x mandatory;
+    scroll-padding-left: 5vw;
     -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
     gap: 1rem;
     padding: 0 5vw 0.5rem;
   }
@@ -931,6 +933,10 @@ h6 {
     min-height: 400px;
     border-radius: 20px;
     scroll-snap-align: start;
+  }
+
+  .project-card-link:active {
+    transform: scale(0.992);
   }
 
   .project-content {
@@ -974,6 +980,7 @@ h6 {
   .tech-tag {
     font-size: 0.62rem;
     padding: 0.25rem 0.55rem;
+    line-height: 1.35;
   }
 
   .timeline-header {
@@ -996,6 +1003,21 @@ h6 {
 
   .footer-big-text {
     margin-bottom: 2rem;
+  }
+
+  .availability,
+  .footer-link {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .bento-item,
+  .project-card,
+  .timeline-item,
+  .footer-link,
+  .availability {
+    -webkit-tap-highlight-color: transparent;
   }
 }
 
@@ -1030,6 +1052,19 @@ h6 {
     width: 100%;
     flex-direction: column;
     gap: 0.9rem;
+  }
+
+  .hero-subtitle {
+    font-size: 0.96rem;
+    line-height: 1.6;
+  }
+
+  .project-card {
+    min-height: 360px;
+  }
+
+  .project-content {
+    padding: 1.1rem;
   }
 }
 

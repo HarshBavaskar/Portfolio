@@ -5,7 +5,7 @@ import { EffectComposer, Bloom, Noise } from '@react-three/postprocessing';
 import { BlendFunction } from 'postprocessing';
 import { motion, useScroll, useTransform, AnimatePresence, useReducedMotion, useInView, useMotionValue, useSpring, useVelocity } from 'framer-motion';
 void motion;
-import { Github, Linkedin, Mail, ArrowUpRight } from 'lucide-react';
+import { Github, Linkedin, Mail, ArrowUpRight, Sun, Moon, ChevronDown, Shield, FlaskConical, Wrench } from 'lucide-react';
 import * as THREE from 'three';
 import './App.css';
 
@@ -17,18 +17,17 @@ import './App.css';
 
 /* ──────────────────── HB MONOGRAM LOGO ──────────────────── */
 function HBLogo({ size = 28, className = '' }) {
+  const draw = {
+    initial: { pathLength: 0, opacity: 0 },
+    animate: { pathLength: 1, opacity: 1, transition: { duration: 1.5, ease: 'easeInOut', delay: 0.5 } }
+  };
   return (
     <svg width={size} height={size} viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
-      {/* H left vertical */}
-      <rect x="4" y="4" width="3.2" height="32" rx="1.6" fill="currentColor" />
-      {/* H-B shared center vertical */}
-      <rect x="18.4" y="4" width="3.2" height="32" rx="1.6" fill="currentColor" />
-      {/* H crossbar */}
-      <rect x="4" y="17.4" width="17.6" height="3.2" rx="1.6" fill="currentColor" />
-      {/* B top arc */}
-      <path d="M20 6 C20 6, 34 6, 34 14.5 C34 23, 20 20.5, 20 20.5" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" fill="none" />
-      {/* B bottom arc */}
-      <path d="M20 20.5 C20 20.5, 36.5 18, 36.5 28 C36.5 37, 20 36, 20 36" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" fill="none" />
+      <motion.rect x="4" y="4" width="3.2" height="32" rx="1.6" fill="currentColor" {...draw} />
+      <motion.rect x="18.4" y="4" width="3.2" height="32" rx="1.6" fill="currentColor" {...draw} transition={{ delay: 0.7 }} />
+      <motion.rect x="4" y="17.4" width="17.6" height="3.2" rx="1.6" fill="currentColor" {...draw} transition={{ delay: 0.9 }} />
+      <motion.path d="M20 6 C20 6, 34 6, 34 14.5 C34 23, 20 20.5, 20 20.5" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" fill="none" {...draw} transition={{ delay: 1.1 }} />
+      <motion.path d="M20 20.5 C20 20.5, 36.5 18, 36.5 28 C36.5 37, 20 36, 20 36" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" fill="none" {...draw} transition={{ delay: 1.3 }} />
     </svg>
   );
 }
@@ -52,7 +51,7 @@ if (typeof window !== 'undefined') {
    Dots at edges stay large + interactive with mouse displacement
    ═══════════════════════════════════════════════════════════ */
 
-function DotMatrix() {
+function DotMatrix({ isDark = false }) {
   const reduceMotion = useReducedMotion();
   const contentRectsRef = useRef([]);
 
@@ -77,17 +76,26 @@ function DotMatrix() {
   return (
     <div className="dot-matrix-canvas" style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
       {/* Perspective Camera dramatically increases the 'True 3D' feeling */}
-      <Canvas camera={{ position: [0, 0, 600], fov: 45 }} gl={{ alpha: true, antialias: true }}>
-        <ambientLight intensity={1.0} />
-        <directionalLight position={[200, 300, 400]} intensity={2.5} castShadow />
-        <pointLight position={[-200, -200, 200]} intensity={1.5} color="#var(--orange)" />
-        <InstancedDotGrid contentRectsRef={contentRectsRef} />
+      <Canvas camera={{ position: [0, 0, 600], fov: 45 }} gl={{ alpha: true, antialias: true, stencil: false, depth: true }} shadows>
+        <ambientLight intensity={isDark ? 1.6 : 1.1} />
+        <directionalLight position={[200, 300, 400]} intensity={isDark ? 3.2 : 2.0} castShadow />
+        <pointLight position={[-200, -200, 200]} intensity={isDark ? 2.8 : 1.2} color={isDark ? "#ff5c00" : "#cc4a00"} />
+        <InstancedDotGrid contentRectsRef={contentRectsRef} isDark={isDark} />
+        <EffectComposer disableNormalPass multisampling={4}>
+          <Bloom
+            luminanceThreshold={isDark ? 0.2 : 0.65}
+            mipmapBlur
+            intensity={isDark ? 1.4 : 0.25}
+            blendFunction={BlendFunction.ADD}
+          />
+          <Noise opacity={isDark ? 0.04 : 0.015} blendFunction={BlendFunction.OVERLAY} />
+        </EffectComposer>
       </Canvas>
     </div>
   );
 }
 
-function InstancedDotGrid({ contentRectsRef }) {
+function InstancedDotGrid({ contentRectsRef, isDark }) {
   const meshRef = useRef();
   const dummy = useMemo(() => new THREE.Object3D(), []);
   const SPACING = 24;
@@ -194,8 +202,17 @@ function InstancedDotGrid({ contentRectsRef }) {
   return (
     <instancedMesh ref={meshRef} args={[null, null, count]}>
       <cylinderGeometry args={[1, 1, 1, 12]} />
-      {/* Balanced 45% opacity for a perfect architectural background weight */}
-      <meshStandardMaterial color="#100f0d" transparent opacity={0.45} depthWrite={false} roughness={0.25} metalness={0.8} />
+      {/* High-visibility Glowing Orange for dark mode, Deeper Architectural Orange for bright mode */}
+      <meshStandardMaterial
+        color={isDark ? "#ff5c00" : "#111111"}
+        emissive={isDark ? "#ff5c00" : "#000000"}
+        emissiveIntensity={isDark ? 1.8 : 0}
+        transparent
+        opacity={isDark ? 0.8 : 0.5}
+        depthWrite={false}
+        roughness={0.2}
+        metalness={0.8}
+      />
     </instancedMesh>
   );
 }
@@ -270,14 +287,14 @@ function FloatingMotes() {
 
 /* ──────────────────── WEBGL BACKGROUND ──────────────────── */
 
-function WebGLBackground() {
+function WebGLBackground({ isDark = false }) {
   const reduceMotion = useReducedMotion();
   return (
     <div className="canvas-container">
       <Canvas camera={{ position: [0, 0, 6], fov: 48 }} gl={{ antialias: true, powerPreference: "high-performance", alpha: true }}>
-        <color attach="background" args={['#f5f3ef']} />
-        <ambientLight intensity={0.5} color="#f5f3ef" />
-        <directionalLight position={[5, 8, 5]} intensity={0.35} color="#f2efeb" />
+        <color attach="background" args={[isDark ? '#000000' : '#f5f3ef']} />
+        <ambientLight intensity={isDark ? 0.3 : 0.5} color={isDark ? '#202020' : '#f5f3ef'} />
+        <directionalLight position={[5, 8, 5]} intensity={isDark ? 0.2 : 0.35} color={isDark ? '#404040' : '#f2efeb'} />
         <pointLight position={[-6, -4, -8]} intensity={0.08} color="#1a5c38" />
         <pointLight position={[6, 4, -6]} intensity={0.06} color="#7b6cb5" />
         <BreathingSphere />
@@ -422,19 +439,17 @@ function ScrollFillWord({ word, progress, range }) {
    ═══════════════════════════════════════════════════════════ */
 
 function KineticDivider({ text = '◆', count = 30 }) {
-  const ref = useRef(null);
-  const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'end start'] });
-  const x = useTransform(scrollYProgress, [0, 1], ['0%', '-50%']);
-  const rotate = useTransform(scrollYProgress, [0, 1], [0, 360]);
+  // Render enough items to overflow the screen twice, then CSS animates translation by exactly half.
+  const items = Array.from({ length: count });
   return (
-    <div ref={ref} className="kinetic-divider grain-zone" aria-hidden="true">
-      <motion.div className="kinetic-track" style={{ x }}>
-        {Array.from({ length: count }).map((_, i) => (
-          <motion.span key={i} className="kinetic-glyph" style={{ rotate }}>
+    <div className="kinetic-divider grain-zone" aria-hidden="true">
+      <div className="kinetic-track">
+        {[...items, ...items].map((_, i) => (
+          <span key={i} className="kinetic-glyph">
             {text}
-          </motion.span>
+          </span>
         ))}
-      </motion.div>
+      </div>
     </div>
   );
 }
@@ -478,28 +493,23 @@ function AnimatedCounter({ value, suffix = '', label = '' }) {
 
 const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%&*';
 
-function TextScramble({ text, className = '', as = 'span' }) {
-  const [display, setDisplay] = useState(text);
-  const [isScrambling, setIsScrambling] = useState(false);
-  const intervalRef = useRef(null);
-  const scramble = useCallback(() => {
-    if (isScrambling) return;
-    setIsScrambling(true);
-    let iteration = 0;
-    clearInterval(intervalRef.current);
-    intervalRef.current = setInterval(() => {
-      setDisplay(text.split('').map((char, i) => {
-        if (char === ' ') return ' ';
-        if (i < iteration) return text[i];
-        return CHARS[Math.floor(Math.random() * CHARS.length)];
-      }).join(''));
-      iteration += 0.5;
-      if (iteration >= text.length) { clearInterval(intervalRef.current); setDisplay(text); setIsScrambling(false); }
-    }, 28);
-  }, [text, isScrambling]);
-  useEffect(() => () => clearInterval(intervalRef.current), []);
-  const Tag = as;
-  return <Tag className={`${className} scramble-text`} onMouseEnter={scramble} data-scrambling={isScrambling ? 'true' : 'false'}>{display}</Tag>;
+/* ──────────────────── GLINT TEXT ──────────────────── */
+function GlintText({ text = '', className = '', as: Tag = 'span' }) {
+  return (
+    <Tag className={`glint-text ${className}`}>
+      {text.split('').map((char, i) => (
+        <motion.span key={i} className="glint-char"
+          variants={{
+            initial: { y: 0, filter: 'blur(0px)', color: 'inherit' },
+            hover: { y: -2, filter: 'blur(0.4px)', color: 'var(--orange)', transition: { duration: 0.3, delay: i * 0.02, ease: [0.22, 1, 0.36, 1] } }
+          }}
+          initial="initial" whileHover="hover"
+        >
+          {char === ' ' ? '\u00A0' : char}
+        </motion.span>
+      ))}
+    </Tag>
+  );
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -815,8 +825,6 @@ function ArchCard({ children, className = '', delay = 0, accentColor = 'var(--gr
       <div ref={glareRef} className="arch-card-glare" />
       {/* Noise texture */}
       <div className="arch-card-noise" />
-      {/* Corner accent */}
-      <div className="arch-card-corner" style={{ background: accentColor }} />
     </motion.div>
   );
 }
@@ -937,16 +945,21 @@ function HorizontalProjects() {
   useEffect(() => { const mq = window.matchMedia('(max-width: 768px), (hover: none) and (pointer: coarse)'); const update = () => setIsMobile(mq.matches); mq.addEventListener('change', update); return () => mq.removeEventListener('change', update); }, []);
 
   const PROJECTS = [
-    { title: 'NASA HERC Rover', year: '2024—25', description: "Organized by NASA", role: 'Construction Lead', tech: ['Mechanical', 'Controls', 'Sensors'], accent: 'var(--green)' },
-    { title: 'Polaris', year: '2026—CURR', description: "AI Early Warning System", role: 'Lead AI Engineer', tech: ['CNN', 'LSTM', 'Python', 'React'], github: 'https://github.com/HarshBavaskar/Polaris', accent: 'var(--orange)' },
-    { title: 'Block Ballot', year: '2026—CURR', description: "Blockchain Voting System", role: 'Full Stack Blockchain', tech: ['Spring Boot', 'Cryptography', 'Merkle Tree'], github: 'https://github.com/HarshBavaskar/BlockBallot', accent: 'var(--lavender)' },
-    { title: 'PRISMRx', year: '2025', description: "Polypharmacy AI Analyzer", role: 'Lead Developer', tech: ['ML', 'Data Pipelines', 'React'], github: 'https://github.com/HarshBavaskar/PrismRX-AI', accent: 'var(--sage)' },
-    { title: 'AIROBOT', year: '2024—25', description: "Autonomous Home Robot", role: 'Hardware Integration', tech: ['Arduino', 'ESP32', 'OpenCV'], accent: 'var(--charcoal)' },
+    { title: 'NASA HERC Rover', year: '2024—25', description: "Organized by NASA", role: 'Construction Lead', tech: ['Mechanical', 'Controls', 'Sensors'], accent: 'var(--orange)', icon: RobotArmIcon },
+    { title: 'Polaris', year: '2026—CURR', description: "AI Early Warning System", role: 'Lead AI Engineer', tech: ['CNN', 'LSTM', 'Python', 'React'], github: 'https://github.com/HarshBavaskar/Polaris', accent: 'var(--orange)', icon: NeuralNetworkIcon },
+    { title: 'Block Ballot', year: '2026—CURR', description: "Blockchain Voting System", role: 'Full Stack Blockchain', tech: ['Spring Boot', 'Cryptography', 'Merkle Tree'], github: 'https://github.com/HarshBavaskar/BlockBallot', accent: 'var(--orange)', icon: Shield },
+    { title: 'PRISMRx', year: '2025', description: "Polypharmacy AI Analyzer", role: 'Lead Developer', tech: ['ML', 'Data Pipelines', 'React'], github: 'https://github.com/HarshBavaskar/PrismRX-AI', accent: 'var(--orange)', icon: FlaskConical },
+    { title: 'AIROBOT', year: '2024—25', description: "Autonomous Home Robot", role: 'Hardware Integration', tech: ['Arduino', 'ESP32', 'OpenCV'], accent: 'var(--orange)', icon: CircuitBoardIcon },
   ];
 
   const Card = ({ proj, i }) => {
+    const Icon = proj.icon;
     const inner = (
       <ParallaxInner factor={0.025}>
+        <div className="card-dot-layer" />
+        <div className="arch-bg-illustration arch-bg-pos-br" style={{ opacity: 0.15 }}>
+          <Icon color={proj.accent} size={220} />
+        </div>
         <span className="project-bg-text">0{i + 1}</span>
         <div className="project-content">
           <div className="project-top">
@@ -957,7 +970,7 @@ function HorizontalProjects() {
             <div className="project-role" style={{ color: proj.accent }}>{proj.role}</div>
             {proj.github && <div className="project-link-hint">GitHub <ArrowUpRight size={11} /></div>}
             <h6>{proj.description}</h6>
-            <TextScramble text={proj.title} as="h3" />
+            <GlintText text={proj.title} as="h3" />
             <div className="project-tech">{proj.tech.map((t, idx) => <span key={idx} className="tech-tag">{t}</span>)}</div>
           </div>
         </div>
@@ -985,13 +998,17 @@ function HorizontalProjects() {
 }
 
 /* ──── ACCORDION (enhanced) ──── */
-function AccordionItem({ year, title, children }) {
+function AccordionItem({ year, title, children, accent = 'var(--text-muted)' }) {
   const [isOpen, setIsOpen] = useState(false);
   return (
     <FadeUp className="timeline-item hover-target" y={20}>
+      <div className="timeline-visual-wrap">
+        <div className="timeline-track" />
+        <div className="timeline-node" style={{ '--node-color': accent }} />
+      </div>
       <div className="timeline-header" onClick={() => setIsOpen(!isOpen)}>
         <div className="tl-year">{year}</div>
-        <TextScramble text={title} as="div" className="tl-title" />
+        <GlintText text={title} as="div" className="tl-title" />
         <div className="tl-arrow">
           <motion.div animate={{ rotate: isOpen ? 180 : 0 }} transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M6 9l6 6 6-6" /></svg>
@@ -1103,6 +1120,44 @@ function RoleCycler() {
       </div>
     </div>
   );
+}/* ──────────────────── HERO PERSPECTIVE ──────────────────── */
+function HeroPerspective({ children }) {
+  const x = useMotionValue(0), y = useMotionValue(0);
+  const rotateX = useSpring(useTransform(y, [-300, 300], [4, -4]), { stiffness: 100, damping: 30 });
+  const rotateY = useSpring(useTransform(x, [-500, 500], [-6, 6]), { stiffness: 100, damping: 30 });
+
+  const handleMove = (e) => {
+    x.set(e.clientX - window.innerWidth / 2);
+    y.set(e.clientY - window.innerHeight / 2);
+  };
+
+  return (
+    <motion.div onMouseMove={handleMove} onMouseLeave={() => { x.set(0); y.set(0); }}
+      style={{ rotateX, rotateY, perspective: '1200px', transformStyle: 'preserve-3d', width: '100%', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+/* ──────────────────── HUD DECALS ──────────────────── */
+function HUDDecals({ progress }) {
+  const y1 = useTransform(progress, [0, 1], [0, -150]);
+  const y2 = useTransform(progress, [0, 1], [0, -220]);
+  const rotate = useTransform(progress, [0, 1], [0, 45]);
+
+  return (
+    <div className="hero-hud-layer">
+      <motion.div className="hero-decal decal-1" style={{ y: y1, rotate }}>
+        <span className="mono-small">SYSTEM_STABLE // 0xCC4A00</span>
+        <div className="decal-line" />
+      </motion.div>
+      <motion.div className="hero-decal decal-2" style={{ y: y2 }}>
+        <div className="decal-cross" />
+        <span className="mono-small">LAT: 19.07 | LNG: 72.87</span>
+      </motion.div>
+    </div>
+  );
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -1122,23 +1177,39 @@ export default function App() {
   const yLine2 = useTransform(heroProgress, [0, 1], [0, 90]);
 
   const [hasLoaded, setHasLoaded] = useState(false);
+  const [isDark, setIsDark] = useState(false);
+
   useEffect(() => { const t = setTimeout(() => setHasLoaded(true), 200); return () => clearTimeout(t); }, []);
+
+  useEffect(() => {
+    if (isDark) document.body.classList.add('dark-theme');
+    else document.body.classList.remove('dark-theme');
+  }, [isDark]);
 
   return (
     <>
       <PhysicsCursor />
-      <WebGLBackground />
-      <DotMatrix />
+      <WebGLBackground isDark={isDark} />
+      <DotMatrix isDark={isDark} />
 
       <main>
         {/* ── HERO ── */}
         <section className="hero" ref={heroRef}>
-          <header className="hero-header">
-            <ElasticButton className="logo hover-target"><HBLogo size={30} /></ElasticButton>
+          <header className={`hero-header grain-zone ${hasLoaded ? 'header-ready' : ''}`}>
+            <motion.div initial={{ opacity: 0, x: -25 }} animate={hasLoaded ? { opacity: 1, x: 0 } : {}} transition={{ delay: 0.5, duration: 1, ease: 'easeOut' }}>
+              <ElasticButton className="logo hover-target"><HBLogo size={30} /></ElasticButton>
+            </motion.div>
             <div className="hero-right">
-              <ElasticButton href="mailto:hbavaskar6@gmail.com" className="availability" target="_blank">
-                <span /> OPEN TO COLLABORATE
-              </ElasticButton>
+              <motion.div initial={{ opacity: 0, y: -15 }} animate={hasLoaded ? { opacity: 1, y: 0 } : {}} transition={{ delay: 0.7, duration: 0.8, ease: 'easeOut' }}>
+                <ElasticButton href="mailto:hbavaskar6@gmail.com" className="availability" target="_blank">
+                  <span /> OPEN TO COLLABORATE
+                </ElasticButton>
+              </motion.div>
+              <motion.div initial={{ opacity: 0, x: 25 }} animate={hasLoaded ? { opacity: 1, x: 0 } : {}} transition={{ delay: 0.9, duration: 1, ease: 'easeOut' }}>
+                <button className="theme-toggle hover-target" onClick={() => setIsDark(!isDark)}>
+                  {isDark ? <Sun size={18} /> : <Moon size={18} />}
+                </button>
+              </motion.div>
             </div>
           </header>
 
@@ -1150,30 +1221,47 @@ export default function App() {
             <span className="mono-small">72.8777° E</span>
           </motion.div>
 
-          <motion.div className="container hero-main grain-zone" style={{ y: yHero, opacity: opacityHero, scale: scaleHero }}>
-            <VelocityText className="hero-titles">
-              <h1 className="title-massive">
-                <motion.div style={{ y: yLine1 }}><MagneticTitle text="HARSH" className="hero-line" /></motion.div>
-                <motion.div style={{ y: yLine2 }}><MagneticTitle text="BAVASKAR." className="hero-line" /></motion.div>
-              </h1>
-            </VelocityText>
+          <HeroPerspective>
+            <motion.div className="container hero-main grain-zone" style={{ y: yHero, opacity: opacityHero, scale: scaleHero }}>
+              <VelocityText className="hero-titles">
+                <h1 className="title-massive">
+                  <motion.div style={{ y: yLine1, rotateX: useTransform(heroProgress, [0, 1], [0, 15]) }}>
+                    <MagneticTitle text="HARSH" className="hero-line" />
+                  </motion.div>
+                  <motion.div style={{ y: yLine2, rotateX: useTransform(heroProgress, [0, 1], [0, -10]) }}>
+                    <MagneticTitle text="BAVASKAR." className="hero-line" />
+                  </motion.div>
+                </h1>
+              </VelocityText>
 
-            <div className="hero-bottom-row">
-              <RoleCycler />
-              <motion.p className="hero-subtitle" initial={{ opacity: 0, y: 18, filter: 'blur(8px)' }} animate={hasLoaded ? { opacity: 1, y: 0, filter: 'blur(0px)' } : {}} transition={{ delay: 1.3, duration: 1.1, ease: [0.22, 1, 0.36, 1] }}>
-                <ScrollFillText text="Building intelligent software, computer vision pipelines, and embedded robotics — combining AI models, scalable backends, and hardware to solve real-world problems." />
-              </motion.p>
-            </div>
+              {/* Floating HUD Decals — Depth Layering */}
+              <HUDDecals progress={heroProgress} />
 
-            {/* Interactive hero tags */}
-            <motion.div className="hero-tags" initial={{ opacity: 0, y: 14 }} animate={hasLoaded ? { opacity: 1, y: 0 } : {}} transition={{ delay: 1.6, duration: 0.9, ease: [0.22, 1, 0.36, 1] }}>
-              {['AI/ML', 'ROBOTICS', 'COMPUTER VISION', 'EMBEDDED', 'FULL STACK'].map((tag, i) => (
-                <motion.span key={tag} className="hero-tag hover-target" whileHover={{ scale: 1.08, y: -3 }} transition={{ type: 'spring', stiffness: 400, damping: 15 }}>
-                  <TextScramble text={tag} />
-                </motion.span>
-              ))}
+              <div className="hero-bottom-row">
+                <RoleCycler />
+                <motion.p className="hero-subtitle" initial={{ opacity: 0, y: 18, filter: 'blur(8px)' }} animate={hasLoaded ? { opacity: 1, y: 0, filter: 'blur(0px)' } : {}} transition={{ delay: 1.3, duration: 1.1, ease: [0.22, 1, 0.36, 1] }}>
+                  <ScrollFillText text="Building intelligent software, computer vision pipelines, and embedded robotics — combining AI models, scalable backends, and hardware to solve real-world problems." />
+                </motion.p>
+              </div>
+
+              {/* Interactive hero tags */}
+              <motion.div className="hero-tags" initial={{ opacity: 0, y: 14 }} animate={hasLoaded ? { opacity: 1, y: 0 } : {}} transition={{ delay: 1.6, duration: 0.9, ease: [0.22, 1, 0.36, 1] }}>
+                {['AI/ML', 'ROBOTICS', 'COMPUTER VISION', 'EMBEDDED', 'FULL STACK'].map((tag, i) => (
+                  <motion.span key={tag} className="hero-tag hover-target" whileHover={{ scale: 1.12, y: -4 }} transition={{ type: 'spring', stiffness: 400, damping: 15 }}>
+                    <GlintText text={tag} />
+                  </motion.span>
+                ))}
+              </motion.div>
+
+              {/* View Work CTA */}
+              <motion.div className="hero-cta-wrap" initial={{ opacity: 0 }} animate={hasLoaded ? { opacity: 1 } : {}} transition={{ delay: 1.9, duration: 1 }}>
+                <a href="#work" className="hero-cta hover-target">
+                  View Work
+                  <ChevronDown className="hero-cta-arrow" size={18} />
+                </a>
+              </motion.div>
             </motion.div>
-          </motion.div>
+          </HeroPerspective>
 
           <motion.div className="scroll-indicator" initial={{ opacity: 0 }} animate={hasLoaded ? { opacity: 1 } : {}} transition={{ delay: 1.8, duration: 1 }}>
             <div className="scroll-line"><div className="scroll-progress-line" /></div>
@@ -1351,7 +1439,7 @@ export default function App() {
         <KineticDivider text="→" count={35} />
 
         {/* ── PROJECTS ── */}
-        <section className="section" style={{ padding: '8rem 0 0 0' }}>
+        <section id="work" className="section" style={{ padding: '8rem 0 0 0' }}>
           <FadeUp className="container section-header-wrap featured-heading grain-zone" style={{ borderBottom: 'none', marginBottom: 0 }}>
             <span className="mono-small">Selected Work</span>
             <h2 className="title-medium">Featured <br /><span className="serif-accent">Engineering</span></h2>
@@ -1369,19 +1457,19 @@ export default function App() {
             <h2 className="title-medium">Journey & <span className="serif-accent">Leadership</span></h2>
           </FadeUp>
           <div className="timeline-container grain-zone">
-            <AccordionItem year="2025—CUR" title="Head of Robotics">
+            <AccordionItem year="2025—CUR" title="Head of Robotics" accent="var(--orange)">
               <div style={{ color: 'var(--green)', marginBottom: '0.5rem', fontWeight: 600 }}>SPARC Society — Atlas Skilltech University</div>
               Leading the entire Robotics Department. Organizing events, workshops, and inter-university competitions.
             </AccordionItem>
-            <AccordionItem year="2024—25" title="Rover Construction Lead">
+            <AccordionItem year="2024—25" title="Rover Construction Lead" accent="var(--orange)">
               <div style={{ color: 'var(--orange)', marginBottom: '0.5rem', fontWeight: 600 }}>Team MUSHAK — NASA HERC</div>
               Led a team of 18 members focusing on mechanical and electrical systems integration for a rugged rover.
             </AccordionItem>
-            <AccordionItem year="2024—28" title="Computer Science Student">
+            <AccordionItem year="2024—28" title="Computer Science Student" accent="var(--orange)">
               <div style={{ color: 'var(--lavender)', marginBottom: '0.5rem', fontWeight: 600 }}>Atlas Skilltech University</div>
               BTech specialization in AI & Machine Learning. Deep-learning mathematics, data structures, architecture.
             </AccordionItem>
-            <AccordionItem year="Awards" title="NASA HERC Recognitions">
+            <AccordionItem year="Awards" title="NASA HERC Recognitions" accent="var(--orange)">
               <div style={{ display: 'flex', gap: '2.5rem', flexWrap: 'wrap' }}>
                 <div><div style={{ color: 'var(--orange)', fontSize: '1.3rem', fontWeight: 700 }}>5th Global</div><div style={{ fontSize: '0.85rem', color: 'var(--text-dim)' }}>RC Division — NASA HERC 2025</div></div>
                 <div><div style={{ color: 'var(--green)', fontSize: '1.3rem', fontWeight: 700 }}>Social Media Award</div><div style={{ fontSize: '0.85rem', color: 'var(--text-dim)' }}>University Division — NASA HERC 2025</div></div>
@@ -1393,7 +1481,9 @@ export default function App() {
         {/* ── FOOTER ── */}
         <footer className="footer container grain-zone">
           <FadeUp>
-            <VelocityText><div className="footer-big-text">HARSH.</div></VelocityText>
+            <a href="mailto:hbavaskar6@gmail.com" className="footer-cta hover-target">
+              Let's build <span>Something →</span>
+            </a>
           </FadeUp>
           <div className="footer-bottom">
             <div className="footer-links">

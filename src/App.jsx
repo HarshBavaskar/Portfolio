@@ -5,7 +5,7 @@ import { EffectComposer, Bloom, Noise } from '@react-three/postprocessing';
 import { BlendFunction } from 'postprocessing';
 import { motion, useScroll, useTransform, AnimatePresence, useReducedMotion, useInView, useMotionValue, useSpring, useVelocity } from 'framer-motion';
 void motion;
-import { Github, Linkedin, Mail, BrainCircuit, Bot, Cpu, Shapes, Database, ArrowUpRight } from 'lucide-react';
+import { Github, Linkedin, Mail, ArrowUpRight } from 'lucide-react';
 import * as THREE from 'three';
 import './App.css';
 
@@ -53,7 +53,6 @@ if (typeof window !== 'undefined') {
    ═══════════════════════════════════════════════════════════ */
 
 function DotMatrix() {
-  const canvasRef = useRef(null);
   const reduceMotion = useReducedMotion();
   const contentRectsRef = useRef([]);
 
@@ -73,95 +72,132 @@ function DotMatrix() {
     return () => { window.removeEventListener('scroll', update); window.removeEventListener('resize', update); clearInterval(interval); };
   }, []);
 
-  useEffect(() => {
-    if (reduceMotion) return;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    const SPACING = 24;
-    const INFLUENCE = 130;
-    const MAX_DISPLACE = 16;
-    let cols, rows, dots, w, h, raf;
-
-    const resize = () => {
-      w = canvas.width = window.innerWidth;
-      h = canvas.height = window.innerHeight;
-      cols = Math.ceil(w / SPACING) + 1;
-      rows = Math.ceil(h / SPACING) + 1;
-      dots = [];
-      for (let r = 0; r < rows; r++) {
-        for (let c = 0; c < cols; c++) {
-          dots.push({ ox: c * SPACING, oy: r * SPACING, x: 0, y: 0, scale: 1 });
-        }
-      }
-    };
-    resize();
-    window.addEventListener('resize', resize);
-
-    // Check if a point falls inside any content rect
-    const getContentProximity = (px, py) => {
-      const rects = contentRectsRef.current;
-      let minDist = Infinity;
-      for (let i = 0; i < rects.length; i++) {
-        const r = rects[i];
-        const PAD = 40; // expand hit zone
-        const cx = Math.max(r.x - PAD, Math.min(px, r.x + r.w + PAD));
-        const cy = Math.max(r.y - PAD, Math.min(py, r.y + r.h + PAD));
-        const dist = Math.sqrt((px - cx) ** 2 + (py - cy) ** 2);
-        if (dist < minDist) minDist = dist;
-      }
-      // 0 = inside content, 1 = far from content
-      const FADE = 80;
-      return minDist < FADE ? minDist / FADE : 1;
-    };
-
-    const render = () => {
-      ctx.clearRect(0, 0, w, h);
-      const mx = mouseStore.x, my = mouseStore.y;
-      for (let i = 0; i < dots.length; i++) {
-        const d = dots[i];
-        const dx = d.ox - mx, dy = d.oy - my;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < INFLUENCE) {
-          const force = (1 - dist / INFLUENCE);
-          const angle = Math.atan2(dy, dx);
-          d.x += (Math.cos(angle) * force * MAX_DISPLACE - d.x) * 0.12;
-          d.y += (Math.sin(angle) * force * MAX_DISPLACE - d.y) * 0.12;
-          d.scale += ((1 + force * 2.5) - d.scale) * 0.12;
-        } else {
-          d.x *= 0.92;
-          d.y *= 0.92;
-          d.scale += (1 - d.scale) * 0.08;
-        }
-        const px = d.ox + d.x;
-        const py = d.oy + d.y;
-
-        // Content zone: dots become ultra-fine grains
-        const proximity = getContentProximity(px, py);
-        const BASE_R = 1.2;
-        const GRAIN_R = 0.35;
-        const baseRadius = GRAIN_R + (BASE_R - GRAIN_R) * proximity;
-        const r = baseRadius * d.scale;
-
-        const baseOpacity = 0.025 + (0.07 - 0.025) * proximity;
-        const opacity = baseOpacity + (d.scale - 1) * 0.12;
-        ctx.beginPath();
-        ctx.arc(px, py, r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(20,18,16,${Math.min(opacity, 0.35)})`;
-        ctx.fill();
-      }
-      raf = requestAnimationFrame(render);
-    };
-    raf = requestAnimationFrame(render);
-
-    return () => {
-      cancelAnimationFrame(raf);
-      window.removeEventListener('resize', resize);
-    };
-  }, [reduceMotion]);
-
   if (reduceMotion) return null;
-  return <canvas ref={canvasRef} className="dot-matrix-canvas" />;
+
+  return (
+    <div className="dot-matrix-canvas" style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
+      {/* Perspective Camera dramatically increases the 'True 3D' feeling */}
+      <Canvas camera={{ position: [0, 0, 600], fov: 45 }} gl={{ alpha: true, antialias: true }}>
+        <ambientLight intensity={1.0} />
+        <directionalLight position={[200, 300, 400]} intensity={2.5} castShadow />
+        <pointLight position={[-200, -200, 200]} intensity={1.5} color="#var(--orange)" />
+        <InstancedDotGrid contentRectsRef={contentRectsRef} />
+      </Canvas>
+    </div>
+  );
+}
+
+function InstancedDotGrid({ contentRectsRef }) {
+  const meshRef = useRef();
+  const dummy = useMemo(() => new THREE.Object3D(), []);
+  const SPACING = 24;
+  const INFLUENCE = 180;
+
+  const [grid, setGrid] = useState({ cols: 0, rows: 0, w: 0, h: 0 });
+
+  useEffect(() => {
+    const updateGrid = () => {
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      const cols = Math.ceil(w / SPACING) + 4;
+      const rows = Math.ceil(h / SPACING) + 4;
+      setGrid({ cols, rows, w, h });
+    };
+    updateGrid();
+    window.addEventListener('resize', updateGrid);
+    return () => window.removeEventListener('resize', updateGrid);
+  }, []);
+
+  const count = grid.cols * grid.rows;
+
+  useFrame((state) => {
+    if (!meshRef.current || count === 0) return;
+
+    // We must manually map the perspective bounds to cover the screen
+    // At Z=0 and camera Z=600, fov=45, the visible height is:
+    const dist = state.camera.position.z;
+    const vHeight = 2 * Math.tan((state.camera.fov * Math.PI) / 360) * dist;
+    const vWidth = vHeight * state.camera.aspect;
+
+    const mx = mouseStore.x;
+    const my = mouseStore.y;
+    const rects = contentRectsRef.current;
+
+    // Slowly tilt the entire matrix based on mouse position to give a parallax 3D feel
+    meshRef.current.rotation.x = (my - grid.h / 2) * 0.0001;
+    meshRef.current.rotation.y = (mx - grid.w / 2) * 0.0001;
+
+    let i = 0;
+    for (let r = 0; r < grid.rows; r++) {
+      for (let c = 0; c < grid.cols; c++) {
+        const px = (c - 2) * SPACING;
+        const py = (r - 2) * SPACING;
+
+        // Content zone check based on pixel coords
+        let minDist = Infinity;
+        for (let j = 0; j < rects.length; j++) {
+          const rect = rects[j];
+          const PAD = 40;
+          const cx = Math.max(rect.x - PAD, Math.min(px, rect.x + rect.w + PAD));
+          const cy = Math.max(rect.y - PAD, Math.min(py, rect.y + rect.h + PAD));
+          const distToContent = Math.sqrt((px - cx) ** 2 + (py - cy) ** 2);
+          if (distToContent < minDist) minDist = distToContent;
+        }
+
+        const FADE = 80;
+        const proximity = minDist < FADE ? minDist / FADE : 1;
+
+        const BASE_R = 1.0;
+        const GRAIN_R = 0.25;
+        const baseRadius = GRAIN_R + (BASE_R - GRAIN_R) * proximity;
+
+        const dx = px - mx;
+        const dy = py - my;
+        const distToMouse = Math.sqrt(dx * dx + dy * dy);
+
+        let z = 0;
+        let scaleXY = baseRadius;
+        // The default cylinder is 1 unit tall. A minimum scale of 0.5 makes it a tiny flat disk like a dot.
+        let scaleH = 0.5;
+
+        // Mouse hover pushes them outwards
+        if (distToMouse < INFLUENCE) {
+          // Multiply the interaction force by proximity squared.
+          // This makes dots near text completely ignore the mouse (remaining fully flat),
+          // while dots in empty space extrude perfectly natively.
+          const force = (1 - distToMouse / INFLUENCE) * (proximity * proximity);
+          z = force * 12; // Very subtle pop towards camera
+          scaleXY = baseRadius * (1 + force * 0.8);
+          scaleH = 0.5 + force * 16; // Mild tactile extrusion instead of huge spikes
+        }
+
+        // Map pixel coordinates to the calculated 3D viewport bounds
+        const x3d = (px / grid.w) * vWidth - (vWidth / 2);
+        const y3d = -((py / grid.h) * vHeight - (vHeight / 2));
+
+        // Cylinder's local Y is its height/length. We want it pointing at the camera (Z axis).
+        // Rotate X by PI/2 makes local Y align with World Z.
+        dummy.position.set(x3d, y3d, z / 2); // Anchor back to the background plane
+        dummy.scale.set(scaleXY, scaleH, scaleXY); // Scale X/Z the same (width), scale Y (height)
+        dummy.rotation.x = Math.PI / 2;
+
+        dummy.updateMatrix();
+        meshRef.current.setMatrixAt(i, dummy.matrix);
+        i++;
+      }
+    }
+    meshRef.current.instanceMatrix.needsUpdate = true;
+  });
+
+  if (count === 0) return null;
+
+  return (
+    <instancedMesh ref={meshRef} args={[null, null, count]}>
+      <cylinderGeometry args={[1, 1, 1, 12]} />
+      {/* Balanced 45% opacity for a perfect architectural background weight */}
+      <meshStandardMaterial color="#100f0d" transparent opacity={0.45} depthWrite={false} roughness={0.25} metalness={0.8} />
+    </instancedMesh>
+  );
 }
 
 /* ──────────────────── 3D BREATHING SPHERE ──────────────────── */
@@ -260,10 +296,8 @@ function WebGLBackground() {
    EXTREME CURSOR — Physics trail + velocity morphing
    ═══════════════════════════════════════════════════════════ */
 
-function ExtremeCursor() {
-  const dotRef = useRef(null);
+function PhysicsCursor() {
   const followerRef = useRef(null);
-  const trailCanvasRef = useRef(null);
   const spotlightRef = useRef(null);
   const [isMobile, setIsMobile] = useState(() =>
     typeof window !== 'undefined' && window.matchMedia('(max-width: 768px), (hover: none) and (pointer: coarse)').matches
@@ -279,38 +313,9 @@ function ExtremeCursor() {
   useEffect(() => {
     if (isMobile) return;
     let mouse = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
-    let dotPos = { ...mouse }, followerPos = { ...mouse };
+    let followerPos = { ...mouse };
     let velocity = { x: 0, y: 0 };
     let prevMouse = { ...mouse };
-
-    class TrailParticle {
-      constructor(x, y, vx, vy) {
-        this.x = x; this.y = y;
-        this.vx = vx * 0.15 + (Math.random() - 0.5) * 1.2;
-        this.vy = vy * 0.15 + (Math.random() - 0.5) * 1.2;
-        this.life = 1;
-        this.decay = 0.015 + Math.random() * 0.012;
-        this.size = (2 + Math.random() * 2.5) * Math.min(1, Math.sqrt(vx * vx + vy * vy) / 12);
-      }
-      update() {
-        this.life -= this.decay;
-        this.x += this.vx; this.y += this.vy;
-        this.vx *= 0.96; this.vy *= 0.96;
-        this.vy += 0.02;
-        this.size *= 0.985;
-      }
-    }
-
-    let particles = [];
-    let trail = [];
-    const MAX_TRAIL = 16;
-    let frameCount = 0;
-    const canvas = trailCanvasRef.current;
-    if (canvas) { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
-    const ctx = canvas?.getContext('2d');
-
-    const onResize = () => { if (canvas) { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }};
-    window.addEventListener('resize', onResize);
 
     const onMove = (e) => {
       prevMouse.x = mouse.x; prevMouse.y = mouse.y;
@@ -330,53 +335,23 @@ function ExtremeCursor() {
 
     let raf;
     const render = () => {
-      frameCount++;
-      const speed = Math.sqrt(velocity.x ** 2 + velocity.y ** 2);
-      dotPos.x += (mouse.x - dotPos.x) * 0.28;
-      dotPos.y += (mouse.y - dotPos.y) * 0.28;
       followerPos.x += (mouse.x - followerPos.x) * 0.08;
       followerPos.y += (mouse.y - followerPos.y) * 0.08;
 
-      const angle = Math.atan2(velocity.y, velocity.x);
-      const stretch = Math.min(speed / 8, 2.2);
-      const scaleX = 1 + stretch * 0.35;
-      const scaleY = 1 / (1 + stretch * 0.18);
-
-      if (dotRef.current) dotRef.current.style.transform = `translate3d(${dotPos.x}px,${dotPos.y}px,0) translate(-50%,-50%) rotate(${angle}rad) scale(${scaleX},${scaleY})`;
       if (followerRef.current) {
-        const fStretch = Math.min(speed / 14, 1.5);
-        followerRef.current.style.transform = `translate3d(${followerPos.x}px,${followerPos.y}px,0) translate(-50%,-50%) rotate(${angle * 0.4}rad) scale(${1 + fStretch * 0.2},${1 / (1 + fStretch * 0.1)})`;
+        followerRef.current.style.transform = `translate3d(${followerPos.x}px,${followerPos.y}px,0) translate(-50%,-50%)`;
       }
-      if (spotlightRef.current) spotlightRef.current.style.background = `radial-gradient(600px circle at ${mouse.x}px ${mouse.y}px, rgba(255,92,0,0.02), transparent 60%)`;
-
-      if (speed > 3 && frameCount % 2 === 0) {
-        const count = Math.min(Math.floor(speed / 6), 4);
-        for (let i = 0; i < count; i++) particles.push(new TrailParticle(mouse.x, mouse.y, velocity.x, velocity.y));
+      if (spotlightRef.current) {
+        spotlightRef.current.style.background = `radial-gradient(600px circle at ${mouse.x}px ${mouse.y}px, rgba(255,92,0,0.02), transparent 60%)`;
       }
 
-      if (ctx) {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        for (let i = particles.length - 1; i >= 0; i--) {
-          const p = particles[i]; p.update();
-          if (p.life <= 0) { particles.splice(i, 1); continue; }
-          ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(20,18,16,${p.life * 0.2})`; ctx.fill();
-        }
-        if (particles.length > 200) particles.splice(0, particles.length - 200);
-        trail.push({ x: mouse.x, y: mouse.y }); if (trail.length > MAX_TRAIL) trail.shift();
-        if (trail.length > 2) {
-          ctx.beginPath(); ctx.moveTo(trail[0].x, trail[0].y);
-          for (let i = 1; i < trail.length; i++) { const t0 = trail[i - 1], t1 = trail[i]; ctx.quadraticCurveTo(t0.x, t0.y, (t0.x + t1.x) / 2, (t0.y + t1.y) / 2); }
-          ctx.strokeStyle = `rgba(20,18,16,${Math.min(speed / 20, 0.12)})`; ctx.lineWidth = Math.max(1, speed * 0.06); ctx.stroke();
-        }
-      }
       velocity.x *= 0.85; velocity.y *= 0.85;
       raf = requestAnimationFrame(render);
     };
     raf = requestAnimationFrame(render);
 
     return () => {
-      window.removeEventListener('mousemove', onMove); window.removeEventListener('resize', onResize);
+      window.removeEventListener('mousemove', onMove);
       document.removeEventListener('mouseover', onOver); document.removeEventListener('mouseout', onOut);
       cancelAnimationFrame(raf);
     };
@@ -386,8 +361,6 @@ function ExtremeCursor() {
   return (
     <>
       <div ref={spotlightRef} className="cursor-spotlight" />
-      <canvas ref={trailCanvasRef} className="cursor-trail-canvas" />
-      <div ref={dotRef} className="cursor-dot" />
       <div ref={followerRef} className="cursor-follower" />
     </>
   );
@@ -454,7 +427,7 @@ function KineticDivider({ text = '◆', count = 30 }) {
   const x = useTransform(scrollYProgress, [0, 1], ['0%', '-50%']);
   const rotate = useTransform(scrollYProgress, [0, 1], [0, 360]);
   return (
-    <div ref={ref} className="kinetic-divider" aria-hidden="true">
+    <div ref={ref} className="kinetic-divider grain-zone" aria-hidden="true">
       <motion.div className="kinetic-track" style={{ x }}>
         {Array.from({ length: count }).map((_, i) => (
           <motion.span key={i} className="kinetic-glyph" style={{ rotate }}>
@@ -559,6 +532,321 @@ function TiltCard({ children, className = '', intensity = 12, glareIntensity = 0
       {children}
       <div ref={glareRef} className="tilt-glare" />
     </motion.div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════
+   CUSTOM ANIMATED ICONS — Hand-crafted SVG icons for each domain
+   Each icon has micro-animations: pulse, orbit, wave, etc.
+   ═══════════════════════════════════════════════════════════ */
+
+function NeuralNetworkIcon({ color = 'var(--green)', size = 48 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" className="domain-icon">
+      {/* Neural connections */}
+      <g className="icon-connections" opacity="0.3">
+        <line x1="12" y1="14" x2="24" y2="24" stroke={color} strokeWidth="0.8" />
+        <line x1="12" y1="34" x2="24" y2="24" stroke={color} strokeWidth="0.8" />
+        <line x1="24" y1="24" x2="36" y2="14" stroke={color} strokeWidth="0.8" />
+        <line x1="24" y1="24" x2="36" y2="34" stroke={color} strokeWidth="0.8" />
+        <line x1="12" y1="14" x2="24" y2="8" stroke={color} strokeWidth="0.5" />
+        <line x1="12" y1="34" x2="24" y2="40" stroke={color} strokeWidth="0.5" />
+        <line x1="24" y1="8" x2="36" y2="14" stroke={color} strokeWidth="0.5" />
+        <line x1="24" y1="40" x2="36" y2="34" stroke={color} strokeWidth="0.5" />
+      </g>
+      {/* Input layer */}
+      <circle cx="12" cy="14" r="3" fill={color} className="icon-node icon-node-1" />
+      <circle cx="12" cy="24" r="2" fill={color} opacity="0.4" className="icon-node icon-node-2" />
+      <circle cx="12" cy="34" r="3" fill={color} className="icon-node icon-node-3" />
+      {/* Hidden layer */}
+      <circle cx="24" cy="8" r="2.5" fill={color} opacity="0.6" className="icon-node icon-node-4" />
+      <circle cx="24" cy="24" r="4" fill={color} className="icon-node-center" />
+      <circle cx="24" cy="24" r="6" fill="none" stroke={color} strokeWidth="0.5" opacity="0.15" className="icon-pulse-ring" />
+      <circle cx="24" cy="40" r="2.5" fill={color} opacity="0.6" className="icon-node icon-node-5" />
+      {/* Output layer */}
+      <circle cx="36" cy="14" r="3" fill={color} className="icon-node icon-node-6" />
+      <circle cx="36" cy="24" r="2" fill={color} opacity="0.4" className="icon-node icon-node-7" />
+      <circle cx="36" cy="34" r="3" fill={color} className="icon-node icon-node-8" />
+      {/* Signal pulse traveling along a connection */}
+      <circle cx="0" cy="0" r="1.5" fill={color} opacity="0.8" className="icon-signal">
+        <animateMotion dur="2.5s" repeatCount="indefinite" path="M12,14 L24,24 L36,14" />
+      </circle>
+      <circle cx="0" cy="0" r="1.5" fill={color} opacity="0.6" className="icon-signal">
+        <animateMotion dur="3s" repeatCount="indefinite" path="M12,34 L24,24 L36,34" begin="0.8s" />
+      </circle>
+    </svg>
+  );
+}
+
+function CircuitBoardIcon({ color = 'var(--lavender)', size = 48 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" className="domain-icon">
+      {/* Circuit traces */}
+      <g opacity="0.35">
+        <path d="M8 24h8l4-8h8l4 8h8" stroke={color} strokeWidth="1" strokeLinecap="round" />
+        <path d="M8 32h6l3-4h14l3 4h6" stroke={color} strokeWidth="0.7" strokeLinecap="round" />
+        <path d="M8 16h6l3 4h14l3-4h6" stroke={color} strokeWidth="0.7" strokeLinecap="round" />
+      </g>
+      {/* Nodes / components */}
+      <rect x="18" y="14" width="12" height="12" rx="2" stroke={color} strokeWidth="1.2" fill="none" className="icon-chip" />
+      <rect x="20" y="16" width="8" height="8" rx="1" fill={color} opacity="0.15" />
+      {/* Pins */}
+      <line x1="20" y1="14" x2="20" y2="11" stroke={color} strokeWidth="0.8" />
+      <line x1="24" y1="14" x2="24" y2="10" stroke={color} strokeWidth="0.8" />
+      <line x1="28" y1="14" x2="28" y2="11" stroke={color} strokeWidth="0.8" />
+      <line x1="20" y1="26" x2="20" y2="29" stroke={color} strokeWidth="0.8" />
+      <line x1="24" y1="26" x2="24" y2="30" stroke={color} strokeWidth="0.8" />
+      <line x1="28" y1="26" x2="28" y2="29" stroke={color} strokeWidth="0.8" />
+      {/* Small junction dots */}
+      <circle cx="8" cy="24" r="1.5" fill={color} />
+      <circle cx="40" cy="24" r="1.5" fill={color} />
+      <circle cx="8" cy="16" r="1" fill={color} opacity="0.5" />
+      <circle cx="40" cy="16" r="1" fill={color} opacity="0.5" />
+      <circle cx="8" cy="32" r="1" fill={color} opacity="0.5" />
+      <circle cx="40" cy="32" r="1" fill={color} opacity="0.5" />
+      {/* Data flow pulse */}
+      <circle r="1.2" fill={color} opacity="0.9" className="icon-data-pulse">
+        <animateMotion dur="2s" repeatCount="indefinite" path="M8,24 L16,24 L20,16 L28,16 L32,24 L40,24" />
+      </circle>
+      {/* Center glow */}
+      <circle cx="24" cy="20" r="2" fill={color} opacity="0.3" className="icon-glow" />
+    </svg>
+  );
+}
+
+function RobotArmIcon({ color = 'var(--orange)', size = 48 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" className="domain-icon">
+      {/* Base platform */}
+      <rect x="10" y="38" width="28" height="4" rx="2" fill={color} opacity="0.2" />
+      <rect x="14" y="36" width="20" height="3" rx="1.5" fill={color} opacity="0.35" />
+      {/* Arm segments */}
+      <g className="icon-arm">
+        <line x1="24" y1="36" x2="24" y2="28" stroke={color} strokeWidth="2.5" strokeLinecap="round" />
+        <line x1="24" y1="28" x2="18" y2="20" stroke={color} strokeWidth="2" strokeLinecap="round" className="icon-arm-seg1" />
+        <line x1="18" y1="20" x2="26" y2="14" stroke={color} strokeWidth="1.5" strokeLinecap="round" className="icon-arm-seg2" />
+      </g>
+      {/* Joint dots */}
+      <circle cx="24" cy="28" r="2.5" fill={color} className="icon-joint" />
+      <circle cx="18" cy="20" r="2" fill={color} className="icon-joint" />
+      {/* Gripper */}
+      <g className="icon-gripper">
+        <line x1="26" y1="14" x2="30" y2="10" stroke={color} strokeWidth="1.2" strokeLinecap="round" />
+        <line x1="26" y1="14" x2="28" y2="8" stroke={color} strokeWidth="1.2" strokeLinecap="round" />
+        <circle cx="30" cy="10" r="1" fill={color} />
+        <circle cx="28" cy="8" r="1" fill={color} />
+      </g>
+      {/* Motion arcs */}
+      <path d="M14 20 A8 8 0 0 1 22 14" stroke={color} strokeWidth="0.5" fill="none" opacity="0.2" strokeDasharray="2 2" className="icon-motion-arc" />
+      {/* Sensor beams from gripper */}
+      <line x1="29" y1="9" x2="34" y2="6" stroke={color} strokeWidth="0.4" opacity="0.3" strokeDasharray="1 2">
+        <animate attributeName="opacity" values="0.1;0.4;0.1" dur="1.5s" repeatCount="indefinite" />
+      </line>
+      <line x1="29" y1="9" x2="35" y2="9" stroke={color} strokeWidth="0.4" opacity="0.3" strokeDasharray="1 2">
+        <animate attributeName="opacity" values="0.1;0.4;0.1" dur="1.5s" repeatCount="indefinite" begin="0.3s" />
+      </line>
+    </svg>
+  );
+}
+
+function ServerStackIcon({ color = 'var(--sage)', size = 48 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" className="domain-icon">
+      {/* Server boxes stacked */}
+      <rect x="10" y="8" width="28" height="8" rx="2" stroke={color} strokeWidth="1" fill={color} fillOpacity="0.06" />
+      <rect x="10" y="19" width="28" height="8" rx="2" stroke={color} strokeWidth="1" fill={color} fillOpacity="0.1" />
+      <rect x="10" y="30" width="28" height="8" rx="2" stroke={color} strokeWidth="1" fill={color} fillOpacity="0.14" />
+      {/* Status LEDs */}
+      <circle cx="15" cy="12" r="1.2" fill={color}>
+        <animate attributeName="opacity" values="0.3;1;0.3" dur="2s" repeatCount="indefinite" />
+      </circle>
+      <circle cx="19" cy="12" r="1.2" fill={color} opacity="0.4" />
+      <circle cx="15" cy="23" r="1.2" fill={color}>
+        <animate attributeName="opacity" values="0.3;1;0.3" dur="1.5s" repeatCount="indefinite" begin="0.5s" />
+      </circle>
+      <circle cx="19" cy="23" r="1.2" fill={color}>
+        <animate attributeName="opacity" values="0.5;1;0.5" dur="2.5s" repeatCount="indefinite" />
+      </circle>
+      <circle cx="15" cy="34" r="1.2" fill={color}>
+        <animate attributeName="opacity" values="0.3;1;0.3" dur="1.8s" repeatCount="indefinite" begin="0.3s" />
+      </circle>
+      <circle cx="19" cy="34" r="1.2" fill={color} opacity="0.6" />
+      {/* Drive activity bars */}
+      <rect x="30" y="11" width="5" height="2" rx="1" fill={color} opacity="0.3" />
+      <rect x="30" y="22" width="5" height="2" rx="1" fill={color} opacity="0.5" />
+      <rect x="30" y="33" width="5" height="2" rx="1" fill={color} opacity="0.4" />
+      {/* Network lines flowing down */}
+      <path d="M24 38v4" stroke={color} strokeWidth="0.8" opacity="0.3" />
+      <circle cx="24" cy="44" r="1.5" fill={color} opacity="0.2" />
+      {/* Data flow dots */}
+      <circle r="0.8" fill={color}>
+        <animateMotion dur="1.2s" repeatCount="indefinite" path="M24,8 L24,38" />
+        <animate attributeName="opacity" values="0;0.8;0" dur="1.2s" repeatCount="indefinite" />
+      </circle>
+    </svg>
+  );
+}
+
+function BlueprintIcon({ color = 'var(--charcoal)', size = 48 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" className="domain-icon">
+      {/* Blueprint paper */}
+      <rect x="8" y="8" width="32" height="32" rx="2" fill={color} fillOpacity="0.04" stroke={color} strokeWidth="0.8" />
+      {/* Grid lines */}
+      <g opacity="0.12">
+        <line x1="8" y1="16" x2="40" y2="16" stroke={color} strokeWidth="0.3" />
+        <line x1="8" y1="24" x2="40" y2="24" stroke={color} strokeWidth="0.3" />
+        <line x1="8" y1="32" x2="40" y2="32" stroke={color} strokeWidth="0.3" />
+        <line x1="16" y1="8" x2="16" y2="40" stroke={color} strokeWidth="0.3" />
+        <line x1="24" y1="8" x2="24" y2="40" stroke={color} strokeWidth="0.3" />
+        <line x1="32" y1="8" x2="32" y2="40" stroke={color} strokeWidth="0.3" />
+      </g>
+      {/* 3D wireframe object */}
+      <g className="icon-blueprint-obj">
+        <polygon points="20,18 30,14 36,20 26,24" fill="none" stroke={color} strokeWidth="0.8" />
+        <polygon points="20,18 20,28 26,34 26,24" fill="none" stroke={color} strokeWidth="0.8" />
+        <polygon points="26,24 36,20 36,30 26,34" fill={color} fillOpacity="0.08" stroke={color} strokeWidth="0.8" />
+      </g>
+      {/* Dimension lines */}
+      <g opacity="0.3">
+        <line x1="20" y1="36" x2="26" y2="36" stroke={color} strokeWidth="0.5" />
+        <line x1="20" y1="35" x2="20" y2="37" stroke={color} strokeWidth="0.5" />
+        <line x1="26" y1="35" x2="26" y2="37" stroke={color} strokeWidth="0.5" />
+      </g>
+      {/* Cursor/pen */}
+      <circle cx="33" cy="27" r="1" fill={color} opacity="0.6" className="icon-pen-cursor">
+        <animate attributeName="cx" values="33;35;33" dur="3s" repeatCount="indefinite" />
+        <animate attributeName="cy" values="27;25;27" dur="3s" repeatCount="indefinite" />
+      </circle>
+    </svg>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SKILL ORBIT — Floating skill tags that orbit a card
+   ═══════════════════════════════════════════════════════════ */
+
+function SkillOrbit({ skills, color, radius = 100 }) {
+  return (
+    <div className="skill-orbit-container">
+      {skills.map((skill, i) => {
+        const angle = (i / skills.length) * 360;
+        const animDelay = i * 0.15;
+        return (
+          <motion.span
+            key={skill}
+            className="skill-orbit-tag"
+            style={{
+              '--orbit-angle': `${angle}deg`,
+              '--orbit-radius': `${radius}px`,
+              '--orbit-delay': `${-i * (20 / skills.length)}s`,
+              color: color,
+              borderColor: color,
+            }}
+            initial={{ opacity: 0, scale: 0 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.3 + animDelay, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+          >
+            {skill}
+          </motion.span>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ARCHITECTURE CARD — Premium glassmorphic card with
+   animated borders, noise texture, and interactive depth
+   ═══════════════════════════════════════════════════════════ */
+
+function ArchCard({ children, className = '', delay = 0, accentColor = 'var(--green)', index = 0 }) {
+  const ref = useRef(null);
+  const glareRef = useRef(null);
+  const borderRef = useRef(null);
+  const isInView = useInView(ref, { once: true, margin: '-8%' });
+  const [mousePos, setMousePos] = useState({ x: 0.5, y: 0.5 });
+
+  const handleMove = useCallback((e) => {
+    if (!ref.current) return;
+    const { left, top, width, height } = ref.current.getBoundingClientRect();
+    const x = (e.clientX - left) / width;
+    const y = (e.clientY - top) / height;
+    setMousePos({ x, y });
+    if (glareRef.current) {
+      glareRef.current.style.background = `radial-gradient(400px at ${x * 100}% ${y * 100}%, rgba(255,255,255,0.08), transparent 60%)`;
+    }
+    if (borderRef.current) {
+      borderRef.current.style.background = `radial-gradient(300px at ${x * 100}% ${y * 100}%, ${accentColor}, transparent 60%)`;
+    }
+  }, [accentColor]);
+
+  const handleLeave = useCallback(() => {
+    setMousePos({ x: 0.5, y: 0.5 });
+    if (glareRef.current) glareRef.current.style.background = 'transparent';
+    if (borderRef.current) borderRef.current.style.background = 'transparent';
+  }, []);
+
+  const tiltX = (mousePos.y - 0.5) * -8;
+  const tiltY = (mousePos.x - 0.5) * 8;
+
+  return (
+    <motion.div
+      ref={ref}
+      className={`arch-card ${className}`}
+      onMouseMove={handleMove}
+      onMouseLeave={handleLeave}
+      initial={{ opacity: 0, y: 40, rotateX: 6 }}
+      animate={isInView ? { opacity: 1, y: 0, rotateX: 0 } : {}}
+      transition={{ duration: 0.85, ease: [0.22, 1, 0.36, 1], delay }}
+      style={{
+        transform: `perspective(900px) rotateX(${tiltX}deg) rotateY(${tiltY}deg)`,
+        '--accent': accentColor,
+      }}
+    >
+      {/* Animated gradient border */}
+      <div ref={borderRef} className="arch-card-border-glow" />
+      {/* Inner content */}
+      <div className="arch-card-inner">
+        {children}
+      </div>
+      {/* Glare overlay */}
+      <div ref={glareRef} className="arch-card-glare" />
+      {/* Noise texture */}
+      <div className="arch-card-noise" />
+      {/* Corner accent */}
+      <div className="arch-card-corner" style={{ background: accentColor }} />
+    </motion.div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════
+   LIVE METRIC — Animated typing metric with blinking cursor
+   ═══════════════════════════════════════════════════════════ */
+
+function LiveMetric({ value, label, color }) {
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, margin: '-10%' });
+  const [display, setDisplay] = useState('');
+
+  useEffect(() => {
+    if (!isInView) return;
+    let idx = 0;
+    const str = value;
+    const interval = setInterval(() => {
+      setDisplay(str.slice(0, idx + 1));
+      idx++;
+      if (idx >= str.length) clearInterval(interval);
+    }, 80);
+    return () => clearInterval(interval);
+  }, [isInView, value]);
+
+  return (
+    <div ref={ref} className="live-metric">
+      <span className="live-metric-value" style={{ color }}>{display}<span className="live-metric-cursor">|</span></span>
+      <span className="live-metric-label">{label}</span>
+    </div>
   );
 }
 
@@ -721,7 +1009,7 @@ function AccordionItem({ year, title, children }) {
   );
 }
 
-/* ──── BENTO CARD (3D tilt) ──── */
+/* ──── BENTO CARD (3D tilt) ──── — kept for backward compat */
 function BentoCard({ children, className = '', delay = 0 }) {
   return <TiltCard className={`bento-item ${className}`} intensity={10} glareIntensity={0.05} delay={delay}>{children}</TiltCard>;
 }
@@ -838,7 +1126,7 @@ export default function App() {
 
   return (
     <>
-      <ExtremeCursor />
+      <PhysicsCursor />
       <WebGLBackground />
       <DotMatrix />
 
@@ -905,45 +1193,157 @@ export default function App() {
           </div>
         </section>
 
-        {/* ── SKILLS ── */}
-        <section className="section container">
-          <FadeUp className="section-header-wrap grain-zone">
+        {/* ── ARCHITECTURE & TOOLKIT ── */}
+        <section className="section container arch-section">
+          <FadeUp className="section-header-wrap arch-header grain-zone">
             <span className="mono-small">Core Competencies</span>
             <h2 className="title-medium">Architecture <br /> & <span className="serif-accent">Toolkit</span></h2>
+            <p className="arch-section-subtitle">Five interconnected disciplines, one unified engineering philosophy — from silicon to screen.</p>
           </FadeUp>
 
-          <div className="bento-grid grain-zone">
-            <BentoCard className="bento-tall code-target" delay={0}>
-              <div className="bento-icon-badge"><BrainCircuit size={20} color="var(--green)" /></div>
-              <h3 className="bento-title">AI & Machine <span className="serif-accent">Learning</span></h3>
-              <p className="bento-desc" style={{ marginBottom: '1rem' }}>Developing high-performance models for computer vision, anomaly detection, and NLP.</p>
-              <div className="project-tech">
-                {['PyTorch','TensorFlow','YOLOv8','DeepSORT','OpenCV','LSTM','CNN','Transformers','RAG'].map(t => <span key={t} className="tech-tag">{t}</span>)}
+          <div className="arch-grid grain-zone">
+            {/* ─── AI & Machine Learning — Hero card ─── */}
+            <ArchCard className="arch-hero-card code-target" delay={0} accentColor="var(--green)" index={0}>
+              {/* Background illustration — large neural net watermark */}
+              <div className="arch-bg-illustration arch-bg-pos-tr">
+                <NeuralNetworkIcon color="var(--green)" size={220} />
               </div>
-            </BentoCard>
-            <BentoCard delay={0.06}>
-              <div className="bento-icon-badge"><Cpu size={20} color="var(--lavender)" /></div>
-              <TextScramble text="Frontend" as="h3" className="bento-title" />
-              <p className="bento-desc">WebGL, Framer Motion, GSAP, Flutter, React, Vite, HTML5, CSS3, UI/UX Design</p>
-            </BentoCard>
-            <BentoCard className="bento-wide" delay={0.12}>
-              <div className="bento-icon-badge"><Bot size={20} color="var(--orange)" /></div>
-              <h3 className="bento-title">Hardware & <span className="serif-accent">Robotics</span></h3>
-              <p className="bento-desc">Arduino, ESP32, Raspberry Pi, Motor drivers, Sensor integration, Embedded prototyping.</p>
-            </BentoCard>
-            <BentoCard className="bento-wide" delay={0.18}>
-              <div className="bento-icon-badge"><Database size={20} color="var(--sage)" /></div>
-              <h3 className="bento-title">Backend <span className="serif-accent">Architecture</span></h3>
-              <p className="bento-desc">Resilient API layers, secure auth, and data pipelines managing thousands of concurrent requests.</p>
-              <div className="project-tech" style={{ marginTop: 'auto' }}>
-                {['Spring Boot','Flask','MongoDB','PostgreSQL','Redis','Docker','Azure','HDFS'].map(t => <span key={t} className="tech-tag">{t}</span>)}
+              <div className="arch-card-header">
+                <div className="arch-card-meta">
+                  <span className="arch-card-number">01</span>
+                  <LiveMetric value="9 frameworks" label="in active use" color="var(--green)" />
+                </div>
               </div>
-            </BentoCard>
-            <BentoCard className="bento-small" delay={0.24}>
-              <div className="bento-icon-badge"><Shapes size={20} color="var(--charcoal)" /></div>
-              <h3 className="bento-title">Prototyping & <span className="serif-accent">CAD</span></h3>
-              <p className="bento-desc">Fusion 360, RhinoCAD, SolidWorks, FDM & SLA 3D Printing.</p>
-            </BentoCard>
+              <div className="arch-card-body">
+                <h3 className="arch-card-title">Artificial Intelligence<br />& <span className="serif-accent">Machine Learning</span></h3>
+                <p className="arch-card-desc">Architecting neural networks for real-time computer vision, predictive anomaly detection, and natural language understanding — from training pipelines to production inference.</p>
+              </div>
+              <div className="arch-card-footer">
+                <div className="arch-tech-cloud">
+                  {['PyTorch', 'TensorFlow', 'YOLOv8', 'DeepSORT', 'OpenCV', 'LSTM', 'CNN', 'Transformers', 'RAG'].map((t, i) => (
+                    <motion.span
+                      key={t}
+                      className="arch-tech-pill"
+                      style={{ '--pill-accent': 'var(--green)' }}
+                      initial={{ opacity: 0, y: 8 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: 0.4 + i * 0.05, duration: 0.4 }}
+                      whileHover={{ scale: 1.08, y: -2 }}
+                    >
+                      {t}
+                    </motion.span>
+                  ))}
+                </div>
+              </div>
+            </ArchCard>
+
+            {/* ─── Frontend & Interfaces — Side card ─── */}
+            <ArchCard className="arch-side-card" delay={0.08} accentColor="var(--lavender)" index={1}>
+              {/* Background illustration — circuit board watermark */}
+              <div className="arch-bg-illustration arch-bg-pos-br">
+                <CircuitBoardIcon color="var(--lavender)" size={200} />
+              </div>
+              <div className="arch-card-header">
+                <span className="arch-card-number">02</span>
+              </div>
+              <div className="arch-card-body">
+                <h3 className="arch-card-title">Frontend &<br /><span className="serif-accent">Interfaces</span></h3>
+                <p className="arch-card-desc">Crafting immersive, performant interfaces with WebGL shaders, physics-based animations, and modern component architectures.</p>
+              </div>
+              <div className="arch-card-footer">
+                <div className="arch-tech-cloud">
+                  {['React', 'Three.js', 'Framer Motion', 'GSAP', 'Flutter', 'Vite', 'WebGL'].map((t, i) => (
+                    <motion.span key={t} className="arch-tech-pill" style={{ '--pill-accent': 'var(--lavender)' }}
+                      initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}
+                      transition={{ delay: 0.5 + i * 0.04 }}
+                      whileHover={{ scale: 1.08, y: -2 }}
+                    >{t}</motion.span>
+                  ))}
+                </div>
+              </div>
+            </ArchCard>
+
+            {/* ─── Hardware & Robotics — Wide landscape card ─── */}
+            <ArchCard className="arch-landscape-card" delay={0.14} accentColor="var(--orange)" index={2}>
+              {/* Background illustration — robot arm spanning the left side */}
+              <div className="arch-bg-illustration arch-bg-pos-cl">
+                <RobotArmIcon color="var(--orange)" size={260} />
+              </div>
+              <div className="arch-landscape-layout">
+                <div className="arch-landscape-left">
+                  <div className="arch-tech-cloud">
+                    {['Arduino', 'ESP32', 'Raspberry Pi', 'Motor Drivers', 'LiDAR', 'OpenCV'].map((t, i) => (
+                      <motion.span key={t} className="arch-tech-pill" style={{ '--pill-accent': 'var(--orange)' }}
+                        initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}
+                        transition={{ delay: 0.6 + i * 0.04 }}
+                        whileHover={{ scale: 1.08, y: -2 }}
+                      >{t}</motion.span>
+                    ))}
+                  </div>
+                </div>
+                <div className="arch-landscape-right">
+                  <span className="arch-card-number">03</span>
+                  <h3 className="arch-card-title">Hardware &<br /><span className="serif-accent">Robotics</span></h3>
+                  <p className="arch-card-desc">From embedded firmware to sensor fusion — designing autonomous systems that bridge the digital‑physical divide.</p>
+                </div>
+              </div>
+            </ArchCard>
+
+            {/* ─── Backend Architecture — Wide card ─── */}
+            <ArchCard className="arch-wide-card" delay={0.20} accentColor="var(--sage)" index={3}>
+              {/* Background illustration — server stack watermark */}
+              <div className="arch-bg-illustration arch-bg-pos-r">
+                <ServerStackIcon color="var(--sage)" size={200} />
+              </div>
+              <div className="arch-card-header">
+                <div className="arch-card-meta">
+                  <span className="arch-card-number">04</span>
+                  <LiveMetric value="8 systems" label="battle‑tested" color="var(--sage)" />
+                </div>
+              </div>
+              <div className="arch-card-body">
+                <h3 className="arch-card-title">Backend <span className="serif-accent">Architecture</span></h3>
+                <p className="arch-card-desc">Engineering resilient API layers, distributed data pipelines, and secure authentication flows — built to sustain thousands of concurrent connections without breaking a sweat.</p>
+              </div>
+              <div className="arch-card-footer">
+                <div className="arch-tech-cloud">
+                  {['Spring Boot', 'Flask', 'MongoDB', 'PostgreSQL', 'Redis', 'Docker', 'Azure', 'HDFS'].map((t, i) => (
+                    <motion.span key={t} className="arch-tech-pill" style={{ '--pill-accent': 'var(--sage)' }}
+                      initial={{ opacity: 0, x: -6 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}
+                      transition={{ delay: 0.5 + i * 0.04 }}
+                      whileHover={{ scale: 1.08, y: -2 }}
+                    >{t}</motion.span>
+                  ))}
+                </div>
+              </div>
+            </ArchCard>
+
+            {/* ─── Prototyping & CAD — Compact accent card ─── */}
+            <ArchCard className="arch-compact-card" delay={0.26} accentColor="var(--charcoal)" index={4}>
+              {/* Background illustration — blueprint watermark */}
+              <div className="arch-bg-illustration arch-bg-pos-tl">
+                <BlueprintIcon color="var(--charcoal)" size={190} />
+              </div>
+              <div className="arch-card-header">
+                <span className="arch-card-number">05</span>
+              </div>
+              <div className="arch-card-body">
+                <h3 className="arch-card-title">Prototyping &<br /><span className="serif-accent">CAD</span></h3>
+                <p className="arch-card-desc">Precision‑modeling in Fusion 360, SolidWorks & RhinoCAD, then materializing designs via FDM and SLA additive manufacturing.</p>
+              </div>
+              <div className="arch-card-footer">
+                <div className="arch-tech-cloud">
+                  {['Fusion 360', 'SolidWorks', 'RhinoCAD', '3D Printing'].map((t, i) => (
+                    <motion.span key={t} className="arch-tech-pill" style={{ '--pill-accent': 'var(--charcoal)' }}
+                      initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}
+                      transition={{ delay: 0.6 + i * 0.05 }}
+                      whileHover={{ scale: 1.08, y: -2 }}
+                    >{t}</motion.span>
+                  ))}
+                </div>
+              </div>
+            </ArchCard>
           </div>
         </section>
 
@@ -951,7 +1351,7 @@ export default function App() {
         <KineticDivider text="→" count={35} />
 
         {/* ── PROJECTS ── */}
-        <section className="section" style={{ padding: 0 }}>
+        <section className="section" style={{ padding: '8rem 0 0 0' }}>
           <FadeUp className="container section-header-wrap featured-heading grain-zone" style={{ borderBottom: 'none', marginBottom: 0 }}>
             <span className="mono-small">Selected Work</span>
             <h2 className="title-medium">Featured <br /><span className="serif-accent">Engineering</span></h2>

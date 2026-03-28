@@ -931,7 +931,9 @@ const FadeUp = ({ children, className = '', delay = 0, y = 35 }) => {
 
 function HorizontalProjects() {
   const targetRef = useRef(null);
-  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 768px), (hover: none) and (pointer: coarse)').matches);
+  const checkMobile = () => typeof window !== 'undefined' && (window.innerWidth <= 768 || window.matchMedia('(hover: none) and (pointer: coarse)').matches);
+  const [isMobile, setIsMobile] = useState(checkMobile);
+  const [hasScrolled, setHasScrolled] = useState(false);
   const { scrollYProgress } = useScroll({ target: targetRef });
   const x = useTransform(scrollYProgress, [0, 1], ['0%', '-65%']);
   // Scroll-linked 3D rotation per card
@@ -942,7 +944,17 @@ function HorizontalProjects() {
   const rotateY5 = useTransform(scrollYProgress, [0.4, 0.7, 0.9], [8, 0, -3]);
   const rotations = [rotateY1, rotateY2, rotateY3, rotateY4, rotateY5];
 
-  useEffect(() => { const mq = window.matchMedia('(max-width: 768px), (hover: none) and (pointer: coarse)'); const update = () => setIsMobile(mq.matches); mq.addEventListener('change', update); return () => mq.removeEventListener('change', update); }, []);
+  useEffect(() => {
+    const update = () => setIsMobile(checkMobile());
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, []);
+
+  const handleScroll = (e) => {
+    if (!hasScrolled && e.target.scrollLeft > 100) {
+      setHasScrolled(true);
+    }
+  };
 
   const PROJECTS = [
     { title: 'NASA HERC Rover', year: '2024—25', description: "Organized by NASA", role: 'Construction Lead', tech: ['Mechanical', 'Controls', 'Sensors'], accent: 'var(--orange)', icon: RobotArmIcon },
@@ -981,13 +993,57 @@ function HorizontalProjects() {
         <TiltCard intensity={8} glareIntensity={0.06}>{inner}</TiltCard>
       </motion.div>
     );
-    return proj.github ? <a key={i} href={proj.github} target="_blank" rel="noreferrer" className="project-card-link">{cardEl}</a> : <div key={i}>{cardEl}</div>;
+    return proj.github ? <a key={i} href={proj.github} target="_blank" rel="noreferrer" className="project-card-wrapper project-card-link">{cardEl}</a> : <div key={i} className="project-card-wrapper">{cardEl}</div>;
   };
 
   return (
     <div ref={targetRef} className="horizontal-scroll-container">
       <div className="horizontal-scroll-sticky">
-        <motion.div style={isMobile ? undefined : { x }} className="horizontal-scroll-wrap">
+        {isMobile && (
+          <AnimatePresence>
+            {!hasScrolled && (
+              <div className="mobile-swipe-indicator-wrapper">
+                <motion.div 
+                  className="mobile-swipe-indicator"
+                  initial={{ opacity: 0, x: 10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, filter: 'blur(4px)' }}
+                  transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                >
+                  <span className="mono-small" style={{ color: 'var(--orange)' }}>SWIPE TO VIEW</span>
+                  <svg width="60" height="12" viewBox="0 0 60 12" fill="none">
+                    {/* Faded track */}
+                    <path d="M 0 6 L 55 6" stroke="currentColor" opacity="0.1" strokeWidth="1" strokeLinecap="round" />
+                    {/* Glowing animated line */}
+                    <motion.path
+                      d="M 0 6 L 55 6"
+                      stroke="var(--orange)"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      initial={{ strokeDasharray: "15 60", strokeDashoffset: 15 }}
+                      animate={{ strokeDashoffset: -60 }}
+                      transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+                      style={{ filter: "drop-shadow(0 0 4px rgba(255, 92, 0, 0.6))" }}
+                    />
+                    {/* Arrow head */}
+                    <motion.path
+                      d="M 51 2 L 56 6 L 51 10"
+                      stroke="var(--orange)"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      initial={{ opacity: 0.3 }}
+                      animate={{ opacity: [0.3, 1, 0.3] }}
+                      transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+                      style={{ filter: "drop-shadow(0 0 4px rgba(255, 92, 0, 0.5))" }}
+                    />
+                  </svg>
+                </motion.div>
+              </div>
+            )}
+          </AnimatePresence>
+        )}
+        <motion.div style={isMobile ? undefined : { x }} className="horizontal-scroll-wrap" onScroll={isMobile ? handleScroll : undefined} onTouchMove={isMobile ? handleScroll : undefined}>
           {!isMobile && <div style={{ paddingRight: '8vw' }} />}
           {PROJECTS.map((proj, i) => <Card key={i} proj={proj} i={i} />)}
           {!isMobile && <div style={{ paddingRight: '10vw' }} />}
@@ -1454,19 +1510,19 @@ export default function App() {
         <section className="section container">
           <FadeUp className="section-header-wrap grain-zone">
             <span className="mono-small">Chronology</span>
-            <h2 className="title-medium">Journey & <span className="serif-accent">Leadership</span></h2>
+            <h2 className="title-medium" style={{ whiteSpace: 'nowrap', fontSize: 'clamp(1.5rem, 8vw, 4rem)' }}>Journey & <span className="serif-accent">Leadership</span></h2>
           </FadeUp>
           <div className="timeline-container grain-zone">
             <AccordionItem year="2025—CUR" title="Head of Robotics" accent="var(--orange)">
-              <div style={{ color: 'var(--green)', marginBottom: '0.5rem', fontWeight: 600 }}>SPARC Society — Atlas Skilltech University</div>
+              <div className="organization-name" style={{ color: 'var(--green)', marginBottom: '0.5rem', fontWeight: 600 }}>SPARC Society — Atlas Skilltech University</div>
               Leading the entire Robotics Department. Organizing events, workshops, and inter-university competitions.
             </AccordionItem>
             <AccordionItem year="2024—25" title="Rover Construction Lead" accent="var(--orange)">
-              <div style={{ color: 'var(--orange)', marginBottom: '0.5rem', fontWeight: 600 }}>Team MUSHAK — NASA HERC</div>
+              <div className="organization-name" style={{ color: 'var(--orange)', marginBottom: '0.5rem', fontWeight: 600 }}>Team MUSHAK — NASA HERC</div>
               Led a team of 18 members focusing on mechanical and electrical systems integration for a rugged rover.
             </AccordionItem>
             <AccordionItem year="2024—28" title="Computer Science Student" accent="var(--orange)">
-              <div style={{ color: 'var(--lavender)', marginBottom: '0.5rem', fontWeight: 600 }}>Atlas Skilltech University</div>
+              <div className="organization-name" style={{ color: 'var(--lavender)', marginBottom: '0.5rem', fontWeight: 600 }}>Atlas Skilltech University</div>
               BTech specialization in AI & Machine Learning. Deep-learning mathematics, data structures, architecture.
             </AccordionItem>
             <AccordionItem year="Awards" title="NASA HERC Recognitions" accent="var(--orange)">

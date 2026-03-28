@@ -356,11 +356,44 @@ function WebGLBackground({ isDark = false }) {
   );
 }
 
+function parseRgbChannels(color) {
+  const match = color && color.match(/rgba?\(([^)]+)\)/i);
+  if (!match) return null;
+  const parts = match[1].split(',').map((part) => Number.parseFloat(part.trim()));
+  if (parts.length < 3 || parts.some((part, index) => index < 3 && Number.isNaN(part))) return null;
+  return {
+    r: parts[0],
+    g: parts[1],
+    b: parts[2],
+    a: Number.isNaN(parts[3]) ? 1 : parts[3],
+  };
+}
+
+function isDarkSurface(element) {
+  let node = element instanceof Element ? element : null;
+  while (node && node !== document.body) {
+    if (node.classList.contains('cursor-invert-surface')) return true;
+    const styles = window.getComputedStyle(node);
+    const bg = parseRgbChannels(styles.backgroundColor);
+    if (bg && bg.a > 0.12) {
+      const luminance = (bg.r * 0.2126 + bg.g * 0.7152 + bg.b * 0.0722) / 255;
+      return luminance < 0.18;
+    }
+    node = node.parentElement;
+  }
+  return false;
+}
+
+function isDarkSurfaceAtPoint(x, y) {
+  const stack = document.elementsFromPoint(x, y);
+  return stack.some((element) => isDarkSurface(element));
+}
+
 /* ═══════════════════════════════════════════════════════════
    EXTREME CURSOR — Physics trail + velocity morphing
    ═══════════════════════════════════════════════════════════ */
 
-function PhysicsCursor() {
+function PhysicsCursor({ isDark = false }) {
   const followerRef = useRef(null);
   const dotRef = useRef(null);
   const [isMobile, setIsMobile] = useState(() =>
@@ -368,6 +401,8 @@ function PhysicsCursor() {
   );
   const [cursorType, setCursorType] = useState('default'); // 'default', 'active', 'view', 'text'
   const [coords, setCoords] = useState({ x: 0, y: 0 });
+  const [isOverDarkSurface, setIsOverDarkSurface] = useState(false);
+  const lastDarkSurfaceRef = useRef(false);
 
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 768px), (hover: none) and (pointer: coarse)');
@@ -387,6 +422,11 @@ function PhysicsCursor() {
     const onMove = (e) => {
       mouse.x = e.clientX; mouse.y = e.clientY;
       setCoords({ x: Math.round(e.clientX), y: Math.round(e.clientY) });
+      const nextIsOverDarkSurface = !isDark && isDarkSurfaceAtPoint(e.clientX, e.clientY);
+      if (nextIsOverDarkSurface !== lastDarkSurfaceRef.current) {
+        lastDarkSurfaceRef.current = nextIsOverDarkSurface;
+        setIsOverDarkSurface(nextIsOverDarkSurface);
+      }
     };
 
     const onOver = (e) => {
@@ -428,12 +468,12 @@ function PhysicsCursor() {
       document.removeEventListener('mouseover', onOver);
       cancelAnimationFrame(raf);
     };
-  }, [isMobile]);
+  }, [isDark, isMobile]);
 
   if (isMobile) return null;
 
   return (
-    <div className={`mechanical-cursor-wrap ${cursorType}`}>
+    <div className={`mechanical-cursor-wrap ${cursorType} ${isOverDarkSurface ? 'contrast-orange' : ''}`}>
       {/* Light Core Dot */}
       <div ref={dotRef} className="cursor-dot-core" />
       
@@ -530,7 +570,7 @@ function KineticDivider({ text = '◆', count = 30 }) {
   // Render enough items to overflow the screen twice, then CSS animates translation by exactly half.
   const items = Array.from({ length: count });
   return (
-    <div className="kinetic-divider grain-zone" aria-hidden="true">
+    <div className="kinetic-divider grain-zone cursor-invert-surface" aria-hidden="true">
       <div className="kinetic-track">
         {[...items, ...items].map((_, i) => (
           <span key={i} className="kinetic-glyph">
@@ -1332,7 +1372,7 @@ export default function App() {
 
   return (
     <>
-      <PhysicsCursor />
+      <PhysicsCursor isDark={isDark} />
       <WebGLBackground isDark={isDark} />
       <DotMatrix isDark={isDark} />
 
@@ -1366,7 +1406,7 @@ export default function App() {
           </motion.div>
 
           <HeroPerspective>
-            <motion.div className="container hero-main grain-zone" style={{ y: yHero, opacity: opacityHero, scale: scaleHero }}>
+            <motion.div className="container hero-main grain-zone cursor-invert-surface" style={{ y: yHero, opacity: opacityHero, scale: scaleHero }}>
               <VelocityText className="hero-titles">
                 <h1 className="title-massive">
                   <motion.div style={{ y: yLine1, rotateX: useTransform(heroProgress, [0, 1], [0, 15]) }}>

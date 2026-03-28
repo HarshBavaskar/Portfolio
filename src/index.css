@@ -53,14 +53,41 @@ body.dark-theme {
   --cursor-trace:  rgba(255, 92, 0, 0.15);
 }
 
-/* Specific Dark Mode overrides for ArchCard depth */
+body.dark-theme .arch-card {
+  box-shadow: none;
+  background: #080808;
+}
+body.dark-theme .arch-card:hover {
+  background: #0c0c0c;
+  /* Intricate 6-Layer Orange Bloom Stack */
+  box-shadow: 
+    0 0 10px rgba(255, 92, 0, 0.3),
+    0 0 25px rgba(255, 92, 0, 0.2),
+    0 0 50px rgba(255, 92, 0, 0.15),
+    0 15px 80px rgba(255, 92, 0, 0.1),
+    0 30px 120px rgba(255, 92, 0, 0.08),
+    0 0 160px rgba(255, 92, 0, 0.05);
+}
 body.dark-theme .arch-card-inner {
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
-  background: rgba(0, 0, 0, 0.85);
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  box-shadow: none;
+}
+body.dark-theme .arch-card:hover .arch-card-inner {
+  background: rgba(8, 8, 8, 0.98);
+  border-color: rgba(255, 92, 0, 0.5);
+  /* Tactical Rim Glow */
+  box-shadow: 
+    inset 1px 1.5px 1px rgba(255, 92, 0, 0.4),
+    inset -1px -1px 2px rgba(0, 0, 0, 0.9),
+    0 0 30px rgba(255, 92, 0, 0.1);
 }
 body.dark-theme .arch-card:hover .arch-card-inner {
   background: #000000;
-  border-color: var(--orange);
+  border-color: rgba(255, 92, 0, 0.3);
+  box-shadow: 
+    inset 0 1px 2px rgba(255, 255, 255, 0.1),
+    0 0 20px rgba(255, 92, 0, 0.05);
 }
 body.dark-theme .arch-tech-pill {
   background: rgba(255, 255, 255, 0.03);
@@ -580,49 +607,61 @@ body.dark-theme .kinetic-glyph {
    ══════════════════════════════════════════ */
 .arch-card {
   position: relative;
-  border-radius: 22px;
+  border-radius: 20px;
   overflow: hidden;
-  will-change: transform;
+  will-change: transform, box-shadow;
   transform-style: preserve-3d;
   backface-visibility: hidden;
-  transition: transform 0.15s ease-out, box-shadow 0.5s var(--ease-out-expo);
+  transform: translateY(0);
+  /* Precision Physics Ease */
+  transition: 
+    transform 0.8s cubic-bezier(0.16, 1, 0.3, 1), 
+    box-shadow 0.8s cubic-bezier(0.16, 1, 0.3, 1), 
+    z-index 0.3s;
   cursor: none;
-  /* Semi-transparent to let dot matrix peek through */
   isolation: isolate;
+  background: var(--bg-elevated);
+  border: none;
+  box-shadow: 0 0 0 0 rgba(0,0,0,0);
 }
 
 .arch-card:hover {
+  transform: translateY(-22px) rotateX(4deg) rotateY(1deg);
+  /* 6-Layer Physical Volumetric Shadow Stack */
   box-shadow:
-    0 4px 16px rgba(0,0,0,0.04),
-    0 24px 48px rgba(0,0,0,0.06),
-    0 0 0 1px rgba(0,0,0,0.04);
+    0 2px 2px rgba(0,0,0,0.02),
+    0 8px 12px rgba(0,0,0,0.03),
+    0 20px 35px rgba(0,0,0,0.04),
+    0 40px 65px rgba(0,0,0,0.05),
+    0 70px 110px rgba(0,0,0,0.08),
+    0 110px 200px rgba(0,0,0,0.1);
+  z-index: 50;
 }
 
 .arch-card-inner {
   position: relative;
   z-index: 2;
-  padding: 2rem 2.2rem;
+  padding: 2.2rem 2.5rem;
   height: 100%;
   display: flex;
   flex-direction: column;
-  /* Mostly opaque light mode to block dark matrix bleed, keeping text readable */
-  background: var(--bg-elevated);
-  backdrop-filter: blur(28px) saturate(1.5);
-  -webkit-backdrop-filter: blur(28px) saturate(1.5);
-  border: 1px solid var(--border);
-  border-radius: 22px;
-  box-shadow: 
-    0 1px 3px rgba(0,0,0,0.02),
-    inset 0 1px 0 rgba(255,255,255,0.7);
-  transition: border-color 0.4s var(--ease-out-expo), background 0.4s, box-shadow 0.4s;
+  background: transparent;
+  backdrop-filter: blur(32px);
+  -webkit-backdrop-filter: blur(32px);
+  border-radius: 20px;
+  border: none;
+  box-shadow: none;
+  transition: all 0.6s var(--ease-out-expo);
 }
 
 .arch-card:hover .arch-card-inner {
-  border-color: var(--border-hover);
-  background: var(--bg-warm);
+  background: #ffffff;
+  border: 1px solid rgba(0,0,0,0.03);
+  /* Ultra-Fine Tactical Bevel triggers on hover */
   box-shadow:
-    0 3px 12px rgba(0,0,0,0.04),
-    inset 0 1px 0 rgba(255,255,255,0.9);
+    inset 1.5px 2px 0px rgba(255,255,255,1),
+    inset -1px -1px 1px rgba(0,0,0,0.2),
+    0 4px 12px rgba(0,0,0,0.05);
 }
 
 /* ── Animated gradient border glow (follows mouse) ── */
@@ -981,12 +1020,28 @@ body.dark-theme .kinetic-glyph {
    ══════════════════════════════════════════ */
 .bento-grid { display: grid; grid-template-columns: repeat(4, 1fr); grid-auto-rows: 260px; gap: 1rem; }
 .bento-item {
-  background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 20px;
+  background: var(--bg-elevated); border: none; border-radius: 20px;
   padding: 1.8rem; position: relative; overflow: hidden;
   display: flex; flex-direction: column;
-  transition: all 0.5s var(--ease-out-expo);
+  transform: translateY(0);
+  transition: all 0.6s var(--ease-out-expo);
+  box-shadow: none;
 }
-.bento-item:hover { border-color: var(--border-hover); transform: translateY(-4px); box-shadow: 0 24px 48px rgba(0,0,0,0.06); }
+.bento-item:hover { 
+  border-color: var(--orange); 
+  transform: translateY(-20px) scale(1.02); 
+  box-shadow: 
+    0 0 15px rgba(255, 92, 0, 0.1),
+    0 20px 40px rgba(255, 92, 0, 0.15),
+    0 40px 100px rgba(255, 92, 0, 0.1); 
+  z-index: 5;
+}
+body.dark-theme .bento-item:hover {
+  box-shadow: 
+    0 0 10px rgba(255, 92, 0, 0.4),
+    0 10px 30px rgba(255, 92, 0, 0.3),
+    0 30px 90px rgba(255, 92, 0, 0.2);
+}
 .bento-large { grid-column: span 2; grid-row: span 2; }
 .bento-wide { grid-column: span 2; }
 .bento-tall { grid-column: span 1; grid-row: span 2; }
@@ -1023,19 +1078,44 @@ body.dark-theme .kinetic-glyph {
 
 .project-card {
   width: 44vw; min-width: 380px; height: 58vh;
-  background: #ff7e33; 
+  background: #ff5c00; 
   color: #fff !important; 
   border: none; 
-  border-radius: 22px;
+  border-radius: 20px;
   position: relative; overflow: hidden; display: flex; flex-direction: column;
-  transition: all 0.6s var(--ease-out-expo);
+  transform: translateY(0);
+  transition: all 1s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: none;
 }
-body.dark-theme .project-card { background: var(--bg-elevated); color: var(--text) !important; border: 1px solid var(--border); }
-.project-card .project-year, .project-card .project-index, .project-card .project-role, .project-card .tech-tag, .project-card .project-link-hint, .project-card h6 { color: rgba(255,255,255,0.9) !important; border-color: rgba(255,255,255,0.3) !important; }
-.project-card .tech-tag { background: rgba(255,255,255,0.1); }
-.project-card .project-bg-text { color: rgba(255,255,255,0.08) !important; }
-.project-card .glint-char { color: #fff !important; }
-.project-card:hover { transform: translateY(-10px) scale(1.02); box-shadow: 0 40px 80px rgba(255, 92, 0, 0.25); }
+
+body.dark-theme .project-card { 
+  background: #080808; 
+  color: var(--text) !important; 
+  border: 1px solid rgba(255, 255, 255, 0.03); 
+  box-shadow: none;
+}
+
+.project-card:hover { 
+  transform: translateY(-28px) rotateX(5deg) scale(1.02); 
+  /* Volumetric Shadow Stack (Bright Mode) */
+  box-shadow: 
+    0 2px 2px rgba(0,0,0,0.02),
+    0 8px 12px rgba(0,0,0,0.03),
+    0 20px 40px rgba(0,0,0,0.04),
+    0 50px 100px rgba(0,0,0,0.06),
+    0 100px 200px rgba(0,0,0,0.08),
+    0 150px 300px rgba(0,0,0,0.12);
+  z-index: 100;
+}
+
+body.dark-theme .project-card:hover {
+  box-shadow: 
+    0 0 15px rgba(255, 92, 0, 0.4),
+    0 10px 40px rgba(255, 92, 0, 0.3),
+    0 30px 80px rgba(255, 92, 0, 0.2),
+    0 60px 150px rgba(255, 92, 0, 0.15),
+    inset 1px 2px 1px rgba(255, 255, 255, 0.15);
+}
 
 .card-dot-layer {
   position: absolute; inset: 0; z-index: 0; pointer-events: none;
@@ -1410,3 +1490,122 @@ body.dark-theme .project-image-overlay {
   transform: translateX(10px);
 }
 .footer-cta span { color: var(--orange); }
+
+/* ──── MECHANICAL HUD CURSOR ──── */
+.mechanical-cursor-wrap {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  pointer-events: none;
+  color: #000000;
+  transition: color 0.5s ease;
+}
+
+body.dark-theme .mechanical-cursor-wrap {
+  color: var(--orange);
+}
+
+.cursor-dot-core {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background: #000000;
+  border-radius: 50%;
+  left: 0; top: 0;
+  will-change: transform;
+  transition: background 0.5s ease, box-shadow 0.5s ease;
+}
+
+body.dark-theme .cursor-dot-core {
+  background: #ffffff;
+  /* Hyper-Realistic Glint + Primary Glow */
+  box-shadow: 
+    0 0 6px rgba(255, 255, 255, 1),
+    0 0 12px rgba(255, 92, 0, 0.8),
+    0 0 25px rgba(255, 92, 0, 0.4);
+}
+
+.cursor-mechanical-hud {
+  position: absolute;
+  width: 70px;
+  height: 70px;
+  left: 0; top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  will-change: transform;
+}
+
+body.dark-theme .cursor-mechanical-hud {
+  /* Merged Halation Bloom */
+  filter: 
+    drop-shadow(0 0 2px rgba(255, 92, 0, 0.9))
+    drop-shadow(0 0 8px rgba(255, 92, 0, 0.5));
+}
+
+.hud-brackets {
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  transform-origin: center;
+  opacity: 1;
+}
+
+body.dark-theme .hud-brackets {
+  opacity: 0.9;
+}
+
+.hud-orbit {
+  animation: hudRotate 10s linear infinite;
+  transform-origin: center;
+  opacity: 0.8;
+}
+
+body.dark-theme .hud-orbit {
+  opacity: 0.6;
+}
+
+@keyframes hudRotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.hud-label {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  fill: currentColor;
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.cursor-data {
+  position: absolute;
+  bottom: -15px;
+  left: 65%;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  opacity: 0;
+  font-family: var(--font-mono);
+  font-size: 6px;
+  transition: opacity 0.4s;
+  color: currentColor;
+}
+
+.mechanical-cursor-wrap:not(.default) .cursor-data { opacity: 0.5; }
+
+/* Adaptive States */
+.mechanical-cursor-wrap.active .hud-brackets { transform: scale(0.65) rotate(45deg); opacity: 1; }
+.mechanical-cursor-wrap.active .label-click { opacity: 1; }
+.mechanical-cursor-wrap.active .cursor-dot-core { opacity: 0; }
+
+.mechanical-cursor-wrap.view .hud-brackets { transform: scale(1.4); opacity: 0.8; }
+.mechanical-cursor-wrap.view .label-view { opacity: 1; }
+
+.mechanical-cursor-wrap.text .hud-brackets { transform: scale(0.8, 1.5); opacity: 0.5; }
+.mechanical-cursor-wrap.text .label-scan { opacity: 1; }
+
+body.dark-theme .mechanical-cursor-wrap {
+  mix-blend-mode: screen;
+}

@@ -1,7 +1,7 @@
 import React, { useRef, useState, useEffect, useMemo, useCallback } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { Float } from '@react-three/drei';
-import { EffectComposer, Bloom, Noise } from '@react-three/postprocessing';
+import { EffectComposer, Bloom, Noise, Vignette, GodRays } from '@react-three/postprocessing';
 import { BlendFunction } from 'postprocessing';
 import { motion, useScroll, useTransform, AnimatePresence, useReducedMotion, useInView, useMotionValue, useSpring, useVelocity } from 'framer-motion';
 void motion;
@@ -54,6 +54,7 @@ if (typeof window !== 'undefined') {
 function DotMatrix({ isDark = false }) {
   const reduceMotion = useReducedMotion();
   const contentRectsRef = useRef([]);
+  const sunRef = useRef();
 
   // Collect content element positions for grain refinement
   useEffect(() => {
@@ -78,21 +79,67 @@ function DotMatrix({ isDark = false }) {
       {/* Perspective Camera dramatically increases the 'True 3D' feeling */}
       <Canvas camera={{ position: [0, 0, 600], fov: 45 }} gl={{ alpha: true, antialias: true, stencil: false, depth: true }} shadows>
         <ambientLight intensity={isDark ? 1.6 : 1.1} />
-        <directionalLight position={[200, 300, 400]} intensity={isDark ? 3.2 : 2.0} castShadow />
-        <pointLight position={[-200, -200, 200]} intensity={isDark ? 2.8 : 1.2} color={isDark ? "#ff5c00" : "#cc4a00"} />
+        <directionalLight position={[200, 300, 400]} intensity={isDark ? 4.0 : 2.5} castShadow />
+        <pointLight position={[-200, -200, 200]} intensity={isDark ? 3.5 : 1.5} color={isDark ? "#ff4d00" : "#cc4a00"} />
+        <MouseLight isDark={isDark} />
+        
+        {/* Hidden sun source for GodRays */}
+        <SunSource ref={sunRef} isDark={isDark} />
+        
         <InstancedDotGrid contentRectsRef={contentRectsRef} isDark={isDark} />
         <EffectComposer disableNormalPass multisampling={4}>
           <Bloom
-            luminanceThreshold={isDark ? 0.2 : 0.65}
+            luminanceThreshold={isDark ? 0.2 : 0.8}
             mipmapBlur
-            intensity={isDark ? 1.4 : 0.25}
-            blendFunction={BlendFunction.ADD}
+            intensity={isDark ? 1.8 : 0.25}
+            radius={0.4}
+            blendFunction={BlendFunction.SCREEN}
           />
-          <Noise opacity={isDark ? 0.04 : 0.015} blendFunction={BlendFunction.OVERLAY} />
+          {isDark && sunRef.current && (
+            <GodRays 
+              sun={sunRef.current} 
+              exposure={0.25} 
+              decay={0.96} 
+              blur={0.8} 
+              samples={60} 
+              density={0.98} 
+              weight={0.6} 
+              clampMax={1.0} 
+            />
+          )}
+          <Vignette eskil={false} offset={0.1} darkness={isDark ? 0.65 : 0.15} />
+          <Noise opacity={isDark ? 0.03 : 0.012} blendFunction={BlendFunction.OVERLAY} />
         </EffectComposer>
       </Canvas>
     </div>
   );
+}
+
+const SunSource = React.forwardRef(({ isDark }, ref) => {
+  useFrame(() => {
+    if (!ref.current) return;
+    const x3d = (mouseStore.x / window.innerWidth) * 800 - 400;
+    const y3d = -((mouseStore.y / window.innerHeight) * 600 - 300);
+    ref.current.position.set(x3d, y3d, 100);
+  });
+  return (
+    <mesh ref={ref}>
+      <sphereGeometry args={[12, 16, 16]} />
+      <meshBasicMaterial color={isDark ? "#ff4d00" : "#000000"} transparent opacity={0} />
+    </mesh>
+  );
+});
+
+function MouseLight({ isDark }) {
+  const lightRef = useRef();
+  useFrame((state) => {
+    if (!lightRef.current) return;
+    const x3d = (mouseStore.x / window.innerWidth) * 800 - 400;
+    const y3d = -((mouseStore.y / window.innerHeight) * 600 - 300);
+    lightRef.current.position.set(x3d, y3d, 120);
+  });
+  // OG High intensity glint
+  return <pointLight ref={lightRef} intensity={isDark ? 18.0 : 5.0} color="#ffffff" distance={200} decay={3.5} />;
 }
 
 function InstancedDotGrid({ contentRectsRef, isDark }) {
@@ -204,13 +251,13 @@ function InstancedDotGrid({ contentRectsRef, isDark }) {
       <cylinderGeometry args={[1, 1, 1, 12]} />
       {/* High-visibility Glowing Orange for dark mode, Deeper Architectural Orange for bright mode */}
       <meshStandardMaterial
-        color={isDark ? "#ff5c00" : "#111111"}
-        emissive={isDark ? "#ff5c00" : "#000000"}
-        emissiveIntensity={isDark ? 1.8 : 0}
+        color={isDark ? "#ff4d00" : "#111111"}
+        emissive={isDark ? "#ff4d00" : "#000000"}
+        emissiveIntensity={isDark ? 3.5 : 0}
         transparent
-        opacity={isDark ? 0.8 : 0.5}
+        opacity={isDark ? 0.95 : 0.45}
         depthWrite={false}
-        roughness={0.2}
+        roughness={0.15}
         metalness={0.8}
       />
     </instancedMesh>
@@ -315,10 +362,12 @@ function WebGLBackground({ isDark = false }) {
 
 function PhysicsCursor() {
   const followerRef = useRef(null);
-  const spotlightRef = useRef(null);
+  const dotRef = useRef(null);
   const [isMobile, setIsMobile] = useState(() =>
     typeof window !== 'undefined' && window.matchMedia('(max-width: 768px), (hover: none) and (pointer: coarse)').matches
   );
+  const [cursorType, setCursorType] = useState('default'); // 'default', 'active', 'view', 'text'
+  const [coords, setCoords] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 768px), (hover: none) and (pointer: coarse)');
@@ -331,55 +380,94 @@ function PhysicsCursor() {
     if (isMobile) return;
     let mouse = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
     let followerPos = { ...mouse };
+    let dotPos = { ...mouse };
     let velocity = { x: 0, y: 0 };
-    let prevMouse = { ...mouse };
+    let rotation = 0;
 
     const onMove = (e) => {
-      prevMouse.x = mouse.x; prevMouse.y = mouse.y;
       mouse.x = e.clientX; mouse.y = e.clientY;
-      velocity.x = mouse.x - prevMouse.x; velocity.y = mouse.y - prevMouse.y;
+      setCoords({ x: Math.round(e.clientX), y: Math.round(e.clientY) });
     };
+
     const onOver = (e) => {
       const t = e.target;
-      if (t.closest('a, button, .hover-target')) document.body.classList.add('hover-active');
-      if (t.closest('.view-target')) document.body.classList.add('hover-view');
-      if (t.closest('.code-target')) document.body.classList.add('hover-code');
+      if (t.closest('a, button, .hover-target')) setCursorType('active');
+      else if (t.closest('.project-card, .arch-card, .bento-item')) setCursorType('view');
+      else if (t.closest('p, h1, h2, h3, .tl-title')) setCursorType('text');
+      else setCursorType('default');
     };
-    const onOut = () => { document.body.classList.remove('hover-active', 'hover-view', 'hover-code'); };
+
     window.addEventListener('mousemove', onMove, { passive: true });
     document.addEventListener('mouseover', onOver);
-    document.addEventListener('mouseout', onOut);
 
     let raf;
     const render = () => {
-      followerPos.x += (mouse.x - followerPos.x) * 0.08;
-      followerPos.y += (mouse.y - followerPos.y) * 0.08;
+      // Different spring speeds for dot vs follower for 'parallax' depth
+      dotPos.x += (mouse.x - dotPos.x) * 0.35;
+      dotPos.y += (mouse.y - dotPos.y) * 0.35;
+      followerPos.x += (mouse.x - followerPos.x) * 0.12;
+      followerPos.y += (mouse.y - followerPos.y) * 0.12;
 
+      velocity.x = mouse.x - followerPos.x;
+      velocity.y = mouse.y - followerPos.y;
+      rotation = (velocity.x * 0.15); // Tilt on move
+
+      if (dotRef.current) {
+        dotRef.current.style.transform = `translate3d(${dotPos.x}px,${dotPos.y}px,0) translate(-50%,-50%)`;
+      }
       if (followerRef.current) {
-        followerRef.current.style.transform = `translate3d(${followerPos.x}px,${followerPos.y}px,0) translate(-50%,-50%)`;
-      }
-      if (spotlightRef.current) {
-        spotlightRef.current.style.background = `radial-gradient(600px circle at ${mouse.x}px ${mouse.y}px, rgba(255,92,0,0.02), transparent 60%)`;
+        const scale = 1 + Math.abs(velocity.x + velocity.y) * 0.002;
+        followerRef.current.style.transform = `translate3d(${followerPos.x}px,${followerPos.y}px,0) translate(-50%,-50%) rotate(${rotation}deg) scale(${scale})`;
       }
 
-      velocity.x *= 0.85; velocity.y *= 0.85;
       raf = requestAnimationFrame(render);
     };
     raf = requestAnimationFrame(render);
-
     return () => {
       window.removeEventListener('mousemove', onMove);
-      document.removeEventListener('mouseover', onOver); document.removeEventListener('mouseout', onOut);
+      document.removeEventListener('mouseover', onOver);
       cancelAnimationFrame(raf);
     };
   }, [isMobile]);
 
   if (isMobile) return null;
+
   return (
-    <>
-      <div ref={spotlightRef} className="cursor-spotlight" />
-      <div ref={followerRef} className="cursor-follower" />
-    </>
+    <div className={`mechanical-cursor-wrap ${cursorType}`}>
+      {/* Light Core Dot */}
+      <div ref={dotRef} className="cursor-dot-core" />
+      
+      {/* Intricate HUD Follower (Scaled Down) */}
+      <div ref={followerRef} className="cursor-mechanical-hud">
+        <svg width="70" height="70" viewBox="0 0 100 100" fill="none">
+          {/* Outer Brackets (lock-on animation) */}
+          <g className="hud-brackets">
+            <path d="M 35 15 L 15 15 L 15 35" stroke="currentColor" strokeWidth="1.5" />
+            <path d="M 65 15 L 85 15 L 85 35" stroke="currentColor" strokeWidth="1.5" />
+            <path d="M 35 85 L 15 85 L 15 65" stroke="currentColor" strokeWidth="1.5" />
+            <path d="M 65 85 L 85 85 L 85 65" stroke="currentColor" strokeWidth="1.5" />
+          </g>
+
+          {/* Orbiting Ring */}
+          <circle cx="50" cy="50" r="22" stroke="currentColor" strokeWidth="0.5" strokeDasharray="4 8" className="hud-orbit" />
+          
+          {/* Inner Target Crosshair */}
+          <line x1="45" y1="50" x2="55" y2="50" stroke="currentColor" strokeWidth="1" opacity="0.5" />
+          <line x1="50" y1="45" x2="50" y2="55" stroke="currentColor" strokeWidth="1" opacity="0.5" />
+
+          {/* Adaptive Labels */}
+          <text x="50" y="54" className="hud-label label-view" textAnchor="middle">VIEW</text>
+          <text x="50" y="54" className="hud-label label-click" textAnchor="middle">LINK</text>
+          <text x="50" y="54" className="hud-label label-scan" textAnchor="middle">SCAN</text>
+        </svg>
+
+        {/* Real-time Data Readout */}
+        <div className="cursor-data">
+          <span className="cursor-coord">X:{coords.x}</span>
+          <span className="cursor-coord">Y:{coords.y}</span>
+        </div>
+      </div>
+    </div>
   );
 }
 

@@ -1229,6 +1229,25 @@ body.dark-theme .project-card:hover {
 .project-card-link:hover .project-link-hint { color: var(--orange); }
 .project-card-link:hover .project-link-hint::after { transform: scaleX(1); }
 
+.project-summary {
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--text-dim);
+  margin-top: 0.5rem;
+  margin-bottom: 1.2rem;
+  font-weight: 300;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  opacity: 0.9;
+}
+
+.project-card .project-summary {
+  color: rgba(255, 255, 255, 0.82);
+  margin-bottom: 1.4rem;
+}
+
 .project-tech { display: flex; flex-wrap: wrap; gap: 0.4rem; }
 .tech-tag {
   font-family: var(--mono); font-size: 0.62rem; padding: 0.25rem 0.65rem;

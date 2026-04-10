@@ -860,6 +860,41 @@ function BlueprintIcon({ color = 'var(--charcoal)', size = 48 }) {
   );
 }
 
+function TranspilerIcon({ color = 'var(--orange)', size = 48 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" className="domain-icon">
+      {/* Central Engine Core */}
+      <rect x="18" y="18" width="12" height="12" rx="2" stroke={color} strokeWidth="1.2" fill="none" className="icon-chip" />
+      <circle cx="24" cy="24" r="3" fill={color} className="icon-pulse-center">
+        <animate attributeName="r" values="2.5;3.5;2.5" dur="1.5s" repeatCount="indefinite" />
+        <animate attributeName="opacity" values="0.6;1;0.6" dur="1.5s" repeatCount="indefinite" />
+      </circle>
+      
+      {/* Input Side (Abstracted logic dots) */}
+      <g opacity="0.4">
+        <circle cx="8" cy="16" r="1.5" fill={color} />
+        <circle cx="12" cy="24" r="1.5" fill={color} />
+        <circle cx="8" cy="32" r="1.5" fill={color} />
+        <path d="M8 16 L18 24 M12 24 L18 24 M8 32 L18 24" stroke={color} strokeWidth="0.5" strokeDasharray="2 2" />
+      </g>
+      
+      {/* Output Side (Structured code blocks) */}
+      <g opacity="0.6">
+        <rect x="34" y="12" width="8" height="2" rx="1" fill={color} />
+        <rect x="34" y="18" width="10" height="2" rx="1" fill={color} />
+        <rect x="34" y="24" width="6" height="2" rx="1" fill={color} />
+        <rect x="34" y="30" width="9" height="2" rx="1" fill={color} />
+        <path d="M30 24 L34 13 M30 24 L34 19 M30 24 L34 25 M30 24 L34 31" stroke={color} strokeWidth="0.5" />
+      </g>
+      
+      {/* Processing Pulse */}
+      <circle r="1.2" fill={color} opacity="0.9">
+        <animateMotion dur="2s" repeatCount="indefinite" path="M12,24 Q18,24 24,24 T36,24" />
+      </circle>
+    </svg>
+  );
+}
+
 /* ═══════════════════════════════════════════════════════════
    SKILL ORBIT — Floating skill tags that orbit a card
    ═══════════════════════════════════════════════════════════ */
@@ -1063,14 +1098,15 @@ function HorizontalProjects() {
   const [isMobile, setIsMobile] = useState(checkMobile);
   const [hasScrolled, setHasScrolled] = useState(false);
   const { scrollYProgress } = useScroll({ target: targetRef });
-  const x = useTransform(scrollYProgress, [0, 1], ['0%', '-65%']);
+  const x = useTransform(scrollYProgress, [0, 1], ['0%', '-82%']);
   // Scroll-linked 3D rotation per card
   const rotateY1 = useTransform(scrollYProgress, [0, 0.2, 0.4], [8, 0, -3]);
   const rotateY2 = useTransform(scrollYProgress, [0.1, 0.35, 0.55], [8, 0, -3]);
   const rotateY3 = useTransform(scrollYProgress, [0.2, 0.5, 0.7], [8, 0, -3]);
   const rotateY4 = useTransform(scrollYProgress, [0.3, 0.6, 0.8], [8, 0, -3]);
   const rotateY5 = useTransform(scrollYProgress, [0.4, 0.7, 0.9], [8, 0, -3]);
-  const rotations = [rotateY1, rotateY2, rotateY3, rotateY4, rotateY5];
+  const rotateY6 = useTransform(scrollYProgress, [0.5, 0.8, 1.0], [8, 0, -3]);
+  const rotations = [rotateY1, rotateY2, rotateY3, rotateY4, rotateY5, rotateY6];
 
   useEffect(() => {
     const update = () => setIsMobile(checkMobile());
@@ -1085,11 +1121,12 @@ function HorizontalProjects() {
   };
 
   const PROJECTS = [
-    { title: 'NASA HERC Rover', year: '2024—25', description: "Organized by NASA", role: 'Construction Lead', tech: ['Mechanical', 'Controls', 'Sensors'], accent: 'var(--orange)', icon: RobotArmIcon },
-    { title: 'Polaris', year: '2026—CURR', description: "AI Early Warning System", role: 'Lead AI Engineer', tech: ['CNN', 'LSTM', 'Python', 'React'], github: 'https://github.com/HarshBavaskar/Polaris', accent: 'var(--orange)', icon: NeuralNetworkIcon },
-    { title: 'Block Ballot', year: '2026—CURR', description: "Blockchain Voting System", role: 'Full Stack Blockchain', tech: ['Spring Boot', 'Cryptography', 'Merkle Tree'], github: 'https://github.com/HarshBavaskar/BlockBallot', accent: 'var(--orange)', icon: Shield },
-    { title: 'PRISMRx', year: '2025', description: "Polypharmacy AI Analyzer", role: 'Lead Developer', tech: ['ML', 'Data Pipelines', 'React'], github: 'https://github.com/HarshBavaskar/PrismRX-AI', accent: 'var(--orange)', icon: FlaskConical },
-    { title: 'AIROBOT', year: '2024—25', description: "Autonomous Home Robot", role: 'Hardware Integration', tech: ['Arduino', 'ESP32', 'OpenCV'], accent: 'var(--orange)', icon: CircuitBoardIcon },
+    { title: 'NASA HERC Rover', year: '2024—25', description: "Organized by NASA", role: 'Construction Lead', summary: 'Engineered a human-powered lunar vehicle for NASA, optimizing for chassis resilience and mechanical drivetrain efficiency.', tech: ['SolidWorks', 'Mechanical Design', 'Control Systems', 'PID Control', 'Sensors', 'Telemetry', 'C++', 'Arduino', 'Power Distribution', 'Chassis Design'], accent: 'var(--orange)', icon: RobotArmIcon },
+    { title: 'NatLang', year: '2026—CURR', description: "AI Transpilation Engine", role: 'Systems Architect', summary: 'An AI-powered VS Code extension that enables real-time natural language transpilation via local LLM orchestration.', tech: ['TypeScript', 'Java', 'VS Code API', 'Ollama', 'LLMs', 'AST Parsing', 'Transpilation', 'Node.js', 'Real-time Streaming', 'Distributed Architecture'], github: 'https://github.com/HarshBavaskar/Natlang-Extension', accent: 'var(--orange)', icon: TranspilerIcon },
+    { title: 'Polaris', year: '2026—CURR', description: "AI Early Warning System", role: 'Lead AI Engineer', summary: 'A sophisticated environmental anomaly detection system leveraging custom CNN-LSTM architectures for predictive intelligence.', tech: ['PyTorch', 'TensorFlow', 'Python', 'CNN', 'LSTM', 'React', 'Time-series', 'FastAPI', 'Docker', 'Scikit-learn'], github: 'https://github.com/HarshBavaskar/Polaris', accent: 'var(--orange)', icon: NeuralNetworkIcon },
+    { title: 'Block Ballot', year: '2026—CURR', description: "Blockchain Voting System", role: 'Full Stack Blockchain', summary: 'A decentralized, tamper-proof voting platform utilizing Merkle Trees and cryptographic hashing for secure electoral management.', tech: ['Spring Boot', 'Cryptography', 'Merkle Tree', 'Blockchain', 'Solidity', 'Smart Contracts', 'Java', 'PostgreSQL', 'JWT Authentication', 'Web3.js'], github: 'https://github.com/HarshBavaskar/BlockBallot', accent: 'var(--orange)', icon: Shield },
+    { title: 'PRISMRx', year: '2025', description: "Polypharmacy AI Analyzer", role: 'Lead Developer', summary: 'A data-driven polypharmacy analyzer using machine learning to detect and mitigate adverse drug-drug interactions.', tech: ['Machine Learning', 'Data Pipelines', 'React', 'Flask', 'Pandas', 'NumPy', 'Scikit-learn', 'Healthcare AI', 'REST API', 'Azure ML'], github: 'https://github.com/HarshBavaskar/PrismRX-AI', accent: 'var(--orange)', icon: FlaskConical },
+    { title: 'AIROBOT', year: '2024—25', description: "Autonomous Home Robot", role: 'Hardware Integration', summary: 'An autonomous indoor surveillance robot featuring real-time LiDAR mapping, obstacle avoidance, and human detection pipelines.', tech: ['Arduino', 'ESP32', 'OpenCV', 'Computer Vision', 'LiDAR', 'SLAM', 'Embedded C++', 'FreeRTOS', 'Sensor Fusion', 'Raspberry Pi'], accent: 'var(--orange)', icon: CircuitBoardIcon },
   ];
 
   const Card = ({ proj, i }) => {
@@ -1111,6 +1148,7 @@ function HorizontalProjects() {
             {proj.github && <div className="project-link-hint">GitHub <ArrowUpRight size={11} /></div>}
             <h6>{proj.description}</h6>
             <GlintText text={proj.title} as="h3" />
+            <p className="project-summary">{proj.summary}</p>
             <div className="project-tech">{proj.tech.map((t, idx) => <span key={idx} className="tech-tag">{t}</span>)}</div>
           </div>
         </div>
@@ -1492,7 +1530,7 @@ export default function App() {
               </div>
               <div className="arch-card-footer">
                 <div className="arch-tech-cloud">
-                  {['PyTorch', 'TensorFlow', 'YOLOv8', 'DeepSORT', 'OpenCV', 'LSTM', 'CNN', 'Transformers', 'RAG'].map((t, i) => (
+                  {['PyTorch', 'TensorFlow', 'YOLOv8', 'OpenCV', 'Transformers', 'RAG', 'LangChain', 'HuggingFace', 'MLOps', 'DeepSORT', 'Computer Vision', 'Neural Networks', 'CUDA', 'Autoencoders'].map((t, i) => (
                     <motion.span
                       key={t}
                       className="arch-tech-pill"
@@ -1525,7 +1563,7 @@ export default function App() {
               </div>
               <div className="arch-card-footer">
                 <div className="arch-tech-cloud">
-                  {['React', 'Three.js', 'Framer Motion', 'GSAP', 'Flutter', 'Vite', 'WebGL'].map((t, i) => (
+                  {['React', 'Three.js', 'Framer Motion', 'GSAP', 'WebGL', 'TailwindCSS', 'TypeScript', 'Next.js', 'Flutter', 'Redux', 'Vite', 'Canvas API', 'SVG Animation', 'Shader Material'].map((t, i) => (
                     <motion.span key={t} className="arch-tech-pill" style={{ '--pill-accent': 'var(--lavender)' }}
                       initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}
                       transition={{ delay: 0.5 + i * 0.04 }}
@@ -1545,7 +1583,7 @@ export default function App() {
               <div className="arch-landscape-layout">
                 <div className="arch-landscape-left">
                   <div className="arch-tech-cloud">
-                    {['Arduino', 'ESP32', 'Raspberry Pi', 'Motor Drivers', 'LiDAR', 'OpenCV'].map((t, i) => (
+                    {['Arduino', 'ESP32', 'Raspberry Pi', 'ROS 2', 'LiDAR', 'OpenCV', 'Embedded C++', 'PCB Design', 'Sensor Fusion', 'FreeRTOS', 'Inverse Kinematics', 'PID Tuning', 'SLAM', 'NVIDIA Jetson'].map((t, i) => (
                       <motion.span key={t} className="arch-tech-pill" style={{ '--pill-accent': 'var(--orange)' }}
                         initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}
                         transition={{ delay: 0.6 + i * 0.04 }}
@@ -1555,7 +1593,10 @@ export default function App() {
                   </div>
                 </div>
                 <div className="arch-landscape-right">
-                  <span className="arch-card-number">03</span>
+                  <div className="arch-card-meta">
+                    <span className="arch-card-number">03</span>
+                    <LiveMetric value="12+ robotic systems" label="deployed & tested" color="var(--orange)" />
+                  </div>
                   <h3 className="arch-card-title">Hardware &<br /><span className="serif-accent">Robotics</span></h3>
                   <p className="arch-card-desc">From embedded firmware to sensor fusion — designing autonomous systems that bridge the digital‑physical divide.</p>
                 </div>
@@ -1580,7 +1621,7 @@ export default function App() {
               </div>
               <div className="arch-card-footer">
                 <div className="arch-tech-cloud">
-                  {['Spring Boot', 'Flask', 'MongoDB', 'PostgreSQL', 'Redis', 'Docker', 'Azure', 'HDFS'].map((t, i) => (
+                  {['Spring Boot', 'Flask', 'Node.js', 'Docker', 'Kubernetes', 'Microservices', 'PostgreSQL', 'MongoDB', 'Redis', 'Kafka', 'GraphQL', 'Azure', 'JWT Auth', 'Elasticsearch'].map((t, i) => (
                     <motion.span key={t} className="arch-tech-pill" style={{ '--pill-accent': 'var(--sage)' }}
                       initial={{ opacity: 0, x: -6 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}
                       transition={{ delay: 0.5 + i * 0.04 }}
@@ -1606,7 +1647,7 @@ export default function App() {
               </div>
               <div className="arch-card-footer">
                 <div className="arch-tech-cloud">
-                  {['Fusion 360', 'SolidWorks', 'RhinoCAD', '3D Printing'].map((t, i) => (
+                  {['Fusion 360', 'SolidWorks', 'RhinoCAD', '3D Printing', 'AutoCAD', 'Generative Design', 'FEA', 'DFM', 'Keyshot', 'Mesh Processing', 'Additive Manufacturing', 'Laser Cutting'].map((t, i) => (
                     <motion.span key={t} className="arch-tech-pill" style={{ '--pill-accent': 'var(--charcoal)' }}
                       initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}
                       transition={{ delay: 0.6 + i * 0.05 }}

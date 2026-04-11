@@ -940,9 +940,28 @@ function ArchCard({ children, className = '', delay = 0, accentColor = 'var(--gr
   const borderRef = useRef(null);
   const isInView = useInView(ref, { once: true, margin: '-8%' });
   const [mousePos, setMousePos] = useState({ x: 0.5, y: 0.5 });
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth <= 768);
+
+  useEffect(() => {
+    const update = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, []);
+
+  const { scrollYProgress } = useScroll({
+    target: ref,
+    offset: ["start end", "end start"]
+  });
+
+  // Focus effect: peaks at the center (0.5 progress)
+  const scrollScale = useTransform(scrollYProgress, [0.3, 0.5, 0.7], [1, 1.04, 1]);
+  const scrollOpacity = useTransform(scrollYProgress, [0.2, 0.5, 0.8], [0.8, 1, 0.8]);
+  const scrollGlow = useTransform(scrollYProgress, [0.4, 0.5, 0.6], 
+    ["0px 0px 0px rgba(0,0,0,0)", "0px 20px 40px rgba(0,0,0,0.12)", "0px 0px 0px rgba(0,0,0,0)"]
+  );
 
   const handleMove = useCallback((e) => {
-    if (!ref.current) return;
+    if (!ref.current || isMobile) return;
     const { left, top, width, height } = ref.current.getBoundingClientRect();
     const x = (e.clientX - left) / width;
     const y = (e.clientY - top) / height;
@@ -953,7 +972,7 @@ function ArchCard({ children, className = '', delay = 0, accentColor = 'var(--gr
     if (borderRef.current) {
       borderRef.current.style.background = `radial-gradient(300px at ${x * 100}% ${y * 100}%, ${accentColor}, transparent 60%)`;
     }
-  }, [accentColor]);
+  }, [accentColor, isMobile]);
 
   const handleLeave = useCallback(() => {
     setMousePos({ x: 0.5, y: 0.5 });
@@ -961,8 +980,8 @@ function ArchCard({ children, className = '', delay = 0, accentColor = 'var(--gr
     if (borderRef.current) borderRef.current.style.background = 'transparent';
   }, []);
 
-  const tiltX = (mousePos.y - 0.5) * -8;
-  const tiltY = (mousePos.x - 0.5) * 8;
+  const tiltX = isMobile ? 0 : (mousePos.y - 0.5) * -8;
+  const tiltY = isMobile ? 0 : (mousePos.x - 0.5) * 8;
 
   return (
     <motion.div
@@ -974,8 +993,12 @@ function ArchCard({ children, className = '', delay = 0, accentColor = 'var(--gr
       animate={isInView ? { opacity: 1, y: 0, rotateX: 0 } : {}}
       transition={{ duration: 0.85, ease: [0.22, 1, 0.36, 1], delay }}
       style={{
-        transform: `perspective(900px) rotateX(${tiltX}deg) rotateY(${tiltY}deg)`,
+        transform: isMobile ? undefined : `perspective(900px) rotateX(${tiltX}deg) rotateY(${tiltY}deg)`,
+        scale: isMobile ? scrollScale : 1,
+        boxShadow: isMobile ? scrollGlow : undefined,
+        opacity: isMobile ? scrollOpacity : 1,
         '--accent': accentColor,
+        zIndex: isMobile ? 1 : undefined
       }}
     >
       {/* Animated gradient border */}
@@ -1129,7 +1152,20 @@ function HorizontalProjects() {
     { title: 'AIROBOT', year: '2024—25', description: "Autonomous Home Robot", role: 'Hardware Integration', summary: 'An autonomous indoor surveillance robot featuring real-time LiDAR mapping, obstacle avoidance, and human detection pipelines.', tech: ['Arduino', 'ESP32', 'OpenCV', 'Computer Vision', 'LiDAR', 'SLAM', 'Embedded C++', 'FreeRTOS', 'Sensor Fusion', 'Raspberry Pi'], accent: 'var(--orange)', icon: CircuitBoardIcon },
   ];
 
-  const Card = ({ proj, i }) => {
+  const ProjectCard = ({ proj, i, isMobile, rotations }) => {
+    const ref = useRef(null);
+    const { scrollXProgress } = useScroll({
+      target: ref,
+      offset: ["start end", "end start"]
+    });
+
+    // Horizontal focus effect
+    const scale = useTransform(scrollXProgress, [0.4, 0.5, 0.6], [1, 1.05, 1]);
+    const glow = useTransform(scrollXProgress, [0.45, 0.5, 0.55], 
+      ["0px 0px 0px rgba(255, 92, 0, 0)", "0px 15px 45px rgba(255, 92, 0, 0.25)", "0px 0px 0px rgba(255, 92, 0, 0)"]
+    );
+    const opacity = useTransform(scrollXProgress, [0.2, 0.5, 0.8], [0.85, 1, 0.85]);
+
     const Icon = proj.icon;
     const inner = (
       <ParallaxInner factor={0.025}>
@@ -1154,18 +1190,40 @@ function HorizontalProjects() {
         </div>
       </ParallaxInner>
     );
+
     const cardEl = (
-      <motion.div className="project-card view-target" style={isMobile ? {} : { rotateY: rotations[i], perspective: 1000 }}>
-        <TiltCard intensity={8} glareIntensity={0.06}>{inner}</TiltCard>
+      <motion.div 
+        ref={ref}
+        className="project-card view-target" 
+        style={{ 
+          rotateY: isMobile ? 0 : rotations[i], 
+          perspective: 1000,
+          scale: isMobile ? scale : 1,
+          boxShadow: isMobile ? glow : undefined,
+          opacity: isMobile ? opacity : 1,
+          zIndex: isMobile ? 10 : 1
+        }}
+      >
+        <TiltCard intensity={isMobile ? 0 : 8} glareIntensity={isMobile ? 0 : 0.06}>{inner}</TiltCard>
       </motion.div>
     );
-    return proj.github ? <a key={i} href={proj.github} target="_blank" rel="noreferrer" className="project-card-wrapper project-card-link">{cardEl}</a> : <div key={i} className="project-card-wrapper">{cardEl}</div>;
+
+    return proj.github ? (
+      <a href={proj.github} target="_blank" rel="noreferrer" className="project-card-wrapper project-card-link">
+        {cardEl}
+      </a>
+    ) : (
+      <div className="project-card-wrapper">
+        {cardEl}
+      </div>
+    );
   };
 
   return (
     <div ref={targetRef} className="horizontal-scroll-container">
       <div className="horizontal-scroll-sticky">
         {isMobile && (
+          /* ... indicator code ... */
           <AnimatePresence>
             {!hasScrolled && (
               <div className="mobile-swipe-indicator-wrapper">
@@ -1178,9 +1236,7 @@ function HorizontalProjects() {
                 >
                   <span className="mono-small" style={{ color: 'var(--orange)' }}>SWIPE TO VIEW</span>
                   <svg width="60" height="12" viewBox="0 0 60 12" fill="none">
-                    {/* Faded track */}
                     <path d="M 0 6 L 55 6" stroke="currentColor" opacity="0.1" strokeWidth="1" strokeLinecap="round" />
-                    {/* Glowing animated line */}
                     <motion.path
                       d="M 0 6 L 55 6"
                       stroke="var(--orange)"
@@ -1191,7 +1247,6 @@ function HorizontalProjects() {
                       transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
                       style={{ filter: "drop-shadow(0 0 4px rgba(255, 92, 0, 0.6))" }}
                     />
-                    {/* Arrow head */}
                     <motion.path
                       d="M 51 2 L 56 6 L 51 10"
                       stroke="var(--orange)"
@@ -1211,7 +1266,9 @@ function HorizontalProjects() {
         )}
         <motion.div style={isMobile ? undefined : { x }} className="horizontal-scroll-wrap" onScroll={isMobile ? handleScroll : undefined} onTouchMove={isMobile ? handleScroll : undefined}>
           {!isMobile && <div style={{ paddingRight: '8vw' }} />}
-          {PROJECTS.map((proj, i) => <Card key={i} proj={proj} i={i} />)}
+          {PROJECTS.map((proj, i) => (
+            <ProjectCard key={i} proj={proj} i={i} isMobile={isMobile} rotations={rotations} />
+          ))}
           {!isMobile && <div style={{ paddingRight: '10vw' }} />}
         </motion.div>
       </div>

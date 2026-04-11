@@ -1164,7 +1164,6 @@ function HorizontalProjects() {
     const glow = useTransform(scrollXProgress, [0.45, 0.5, 0.55], 
       ["0px 0px 0px rgba(255, 92, 0, 0)", "0px 15px 45px rgba(255, 92, 0, 0.25)", "0px 0px 0px rgba(255, 92, 0, 0)"]
     );
-    const opacity = useTransform(scrollXProgress, [0.2, 0.5, 0.8], [0.85, 1, 0.85]);
 
     const Icon = proj.icon;
     const inner = (
@@ -1200,7 +1199,7 @@ function HorizontalProjects() {
           perspective: 1000,
           scale: isMobile ? scale : 1,
           boxShadow: isMobile ? glow : undefined,
-          opacity: isMobile ? opacity : 1,
+          opacity: 1,
           zIndex: isMobile ? 10 : 1
         }}
       >

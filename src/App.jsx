@@ -7,6 +7,8 @@ import { motion, useScroll, useTransform, AnimatePresence, useReducedMotion, use
 void motion;
 import { Github, Linkedin, Mail, ArrowUpRight, Sun, Moon, ChevronDown, Shield, FlaskConical, Wrench } from 'lucide-react';
 import * as THREE from 'three';
+import Lenis from 'lenis';
+import 'lenis/dist/lenis.css';
 import './App.css';
 
 /* ═══════════════════════════════════════════════════════════
@@ -1463,6 +1465,13 @@ export default function App() {
     if (isDark) document.body.classList.add('dark-theme');
     else document.body.classList.remove('dark-theme');
   }, [isDark]);
+
+  useEffect(() => {
+    const lenis = new Lenis({
+      autoRaf: true,
+    });
+    return () => lenis.destroy();
+  }, []);
 
   return (
     <>

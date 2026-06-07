@@ -4,6 +4,7 @@ import { Float } from '@react-three/drei';
 import { EffectComposer, Bloom, Noise, Vignette, GodRays } from '@react-three/postprocessing';
 import { BlendFunction } from 'postprocessing';
 import { motion, useScroll, useTransform, AnimatePresence, useReducedMotion, useInView, useMotionValue, useSpring, useVelocity } from 'framer-motion';
+import ThreeDAsciiName from './components/ThreeDAsciiName';
 void motion;
 import { Github, Linkedin, Mail, ArrowUpRight, ChevronDown, Shield, FlaskConical, Wrench } from 'lucide-react';
 import * as THREE from 'three';
@@ -539,16 +540,14 @@ function VerticalTicker({ items, speed = 18 }) {
    Each word transitions from muted to full color as you scroll
    ═══════════════════════════════════════════════════════════ */
 
-function ScrollFillText({ text, className = '' }) {
-  const ref = useRef(null);
-  const { scrollYProgress } = useScroll({ target: ref, offset: ['start 0.85', 'end 0.35'] });
+function ScrollFillText({ text, className = '', progress }) {
   const words = text.split(' ');
   return (
-    <span ref={ref} className={`scroll-fill-text ${className}`}>
+    <span className={`scroll-fill-text ${className}`}>
       {words.map((word, i) => {
         const start = i / words.length;
         const end = start + 1 / words.length;
-        return <ScrollFillWord key={i} word={word} progress={scrollYProgress} range={[start, end]} />;
+        return <ScrollFillWord key={i} word={word} progress={progress} range={[start, end]} />;
       })}
     </span>
   );
@@ -1422,19 +1421,15 @@ function HeroPerspective({ children }) {
 
 /* ──────────────────── HUD DECALS ──────────────────── */
 function HUDDecals({ progress }) {
-  const y1 = useTransform(progress, [0, 1], [0, -150]);
-  const y2 = useTransform(progress, [0, 1], [0, -220]);
-  const rotate = useTransform(progress, [0, 1], [0, 45]);
+  const y1 = useTransform(progress, [0.5, 1], [0, -150]);
+  const y2 = useTransform(progress, [0.5, 1], [0, -220]);
+  const rotate = useTransform(progress, [0.5, 1], [0, 45]);
 
   return (
     <div className="hero-hud-layer">
       <motion.div className="hero-decal decal-1" style={{ y: y1, rotate }}>
         <span className="mono-small">SYSTEM_STABLE // 0xCC4A00</span>
         <div className="decal-line" />
-      </motion.div>
-      <motion.div className="hero-decal decal-2" style={{ y: y2 }}>
-        <div className="decal-cross" />
-        <span className="mono-small">LAT: 19.07 | LNG: 72.87</span>
       </motion.div>
     </div>
   );
@@ -1449,12 +1444,19 @@ const SKILLS_LIST = ['PYTORCH', 'TENSORFLOW', 'YOLOv8', 'OPENCV', 'DOCKER', 'REA
 export default function App() {
   const heroRef = useRef(null);
   const { scrollYProgress: heroProgress } = useScroll({ target: heroRef, offset: ['start start', 'end start'] });
-  const yHero = useTransform(heroProgress, [0, 1], [0, 120]);
-  const opacityHero = useTransform(heroProgress, [0, 0.7], [1, 0]);
-  const scaleHero = useTransform(heroProgress, [0, 1], [1, 0.95]);
-  // Hero Title parallax (different speeds per line)
-  const yLine1 = useTransform(heroProgress, [0, 1], [0, 50]);
-  const yLine2 = useTransform(heroProgress, [0, 1], [0, 90]);
+  
+  // Pinned for first 50% of scroll
+  const textFillProgress = useTransform(heroProgress, [0.05, 0.45], [0, 1]);
+  
+  // Scrolls away and fades in second 50%
+  const yHero = useTransform(heroProgress, [0.5, 1], [0, 120]);
+  const opacityHero = useTransform(heroProgress, [0.5, 0.9], [1, 0]);
+  const opacityDotMatrix = useTransform(heroProgress, [0.5, 1], [0, 1]);
+  const scaleHero = useTransform(heroProgress, [0.5, 1], [1, 0.95]);
+  
+  // Hero Title parallax
+  const yLine1 = useTransform(heroProgress, [0.5, 1], [0, 50]);
+  const yLine2 = useTransform(heroProgress, [0.5, 1], [0, 90]);
 
   const [hasLoaded, setHasLoaded] = useState(false);
   const isDark = true;
@@ -1477,12 +1479,18 @@ export default function App() {
     <>
       <PhysicsCursor isDark={isDark} />
       <WebGLBackground isDark={isDark} />
-      <DotMatrix isDark={isDark} />
+      {/* 3D Global Background (Fades in after Hero) */}
+      <motion.div style={{ position: 'fixed', inset: 0, zIndex: 0, opacity: opacityDotMatrix, pointerEvents: 'none' }}>
+        <DotMatrix isDark={isDark} />
+      </motion.div>
+
+      {/* Fixed ASCII Background moved into hero-main to allow frost blur */}
 
       <main>
         {/* ── HERO ── */}
-        <section className="hero" ref={heroRef}>
-          <header className={`hero-header grain-zone ${hasLoaded ? 'header-ready' : ''}`}>
+        <div ref={heroRef} style={{ height: '200vh' }}>
+          <section className="hero" style={{ position: 'sticky', top: 0, height: '100dvh', overflow: 'hidden' }}>
+            <header className={`hero-header grain-zone ${hasLoaded ? 'header-ready' : ''}`}>
             <motion.div initial={{ opacity: 0, x: -25 }} animate={hasLoaded ? { opacity: 1, x: 0 } : {}} transition={{ delay: 0.5, duration: 1, ease: 'easeOut' }}>
               <ElasticButton className="logo hover-target"><HBLogo size={30} /></ElasticButton>
             </motion.div>
@@ -1504,44 +1512,58 @@ export default function App() {
           </motion.div>
 
           <HeroPerspective>
-            <motion.div className="container hero-main grain-zone cursor-invert-surface" style={{ y: yHero, opacity: opacityHero, scale: scaleHero }}>
-              <VelocityText className="hero-titles">
-                <h1 className="title-massive">
-                  <motion.div style={{ y: yLine1, rotateX: useTransform(heroProgress, [0, 1], [0, 15]) }}>
-                    <MagneticTitle text="HARSH" className="hero-line" />
-                  </motion.div>
-                  <motion.div style={{ y: yLine2, rotateX: useTransform(heroProgress, [0, 1], [0, -10]) }}>
-                    <MagneticTitle text="BAVASKAR." className="hero-line" />
-                  </motion.div>
-                </h1>
-              </VelocityText>
-
-              {/* Floating HUD Decals — Depth Layering */}
-              <HUDDecals progress={heroProgress} />
-
-              <div className="hero-bottom-row">
-                <RoleCycler />
-                <motion.p className="hero-subtitle" initial={{ opacity: 0, y: 18, filter: 'blur(8px)' }} animate={hasLoaded ? { opacity: 1, y: 0, filter: 'blur(0px)' } : {}} transition={{ delay: 1.3, duration: 1.1, ease: [0.22, 1, 0.36, 1] }}>
-                  <ScrollFillText text="Building intelligent software, computer vision pipelines, and embedded robotics — combining AI models, scalable backends, and hardware to solve real-world problems." />
-                </motion.p>
+            <motion.div style={{ y: yHero, opacity: opacityHero, scale: scaleHero, width: '100%', height: '100%', position: 'relative' }}>
+              
+              {/* ASCII Background rendered inside the isolated stacking context so backdrop-filter works, but expanded beyond padding to hit screen edges! */}
+              <div style={{ position: 'absolute', top: '-15vh', bottom: '-15vh', left: '-5vw', right: '-5vw', zIndex: -1, pointerEvents: 'none' }}>
+                <ThreeDAsciiName />
               </div>
 
-              {/* Interactive hero tags */}
-              <motion.div className="hero-tags" initial={{ opacity: 0, y: 14 }} animate={hasLoaded ? { opacity: 1, y: 0 } : {}} transition={{ delay: 1.6, duration: 0.9, ease: [0.22, 1, 0.36, 1] }}>
-                {['AI/ML', 'ROBOTICS', 'COMPUTER VISION', 'EMBEDDED', 'FULL STACK'].map((tag, i) => (
-                  <motion.span key={tag} className="hero-tag hover-target" whileHover={{ scale: 1.12, y: -4 }} transition={{ type: 'spring', stiffness: 400, damping: 15 }}>
-                    <GlintText text={tag} />
-                  </motion.span>
-                ))}
-              </motion.div>
+              <div className="container hero-main grain-zone cursor-invert-surface" style={{ height: '100%' }}>
+                <VelocityText className="hero-titles">
+                  <h1 className="title-massive">
+                    <motion.div style={{ y: yLine1, rotateX: useTransform(heroProgress, [0, 1], [0, 15]) }}>
+                      <MagneticTitle text="HARSH" className="hero-line" />
+                    </motion.div>
+                    <motion.div style={{ y: yLine2, rotateX: useTransform(heroProgress, [0, 1], [0, -10]) }}>
+                      <MagneticTitle text="BAVASKAR." className="hero-line" />
+                    </motion.div>
+                  </h1>
+                </VelocityText>
 
-              {/* View Work CTA */}
-              <motion.div className="hero-cta-wrap" initial={{ opacity: 0 }} animate={hasLoaded ? { opacity: 1 } : {}} transition={{ delay: 1.9, duration: 1 }}>
-                <a href="#work" className="hero-cta hover-target">
-                  View Work
-                  <ChevronDown className="hero-cta-arrow" size={18} />
-                </a>
-              </motion.div>
+                {/* Floating HUD Decals — Depth Layering */}
+                <HUDDecals progress={heroProgress} />
+
+                <div className="hero-bottom-row">
+                  <div className="decal-2-anchor">
+                    <motion.div className="hero-decal decal-2" style={{ y: useTransform(heroProgress, [0.5, 1], [0, -220]) }}>
+                      <div className="decal-cross" />
+                      <span className="mono-small">LAT: 19.07 | LNG: 72.87</span>
+                    </motion.div>
+                    <RoleCycler />
+                  </div>
+                  <motion.p className="hero-subtitle" initial={{ opacity: 0, y: 18, filter: 'blur(8px)' }} animate={hasLoaded ? { opacity: 1, y: 0, filter: 'blur(0px)' } : {}} transition={{ delay: 1.3, duration: 1.1, ease: [0.22, 1, 0.36, 1] }}>
+                    <ScrollFillText text="Building intelligent software, computer vision pipelines, and embedded robotics — combining AI models, scalable backends, and hardware to solve real-world problems." progress={textFillProgress} />
+                  </motion.p>
+                </div>
+
+                {/* Interactive hero tags */}
+                <motion.div className="hero-tags" initial={{ opacity: 0, y: 14 }} animate={hasLoaded ? { opacity: 1, y: 0 } : {}} transition={{ delay: 1.6, duration: 0.9, ease: [0.22, 1, 0.36, 1] }}>
+                  {['AI/ML', 'ROBOTICS', 'COMPUTER VISION', 'EMBEDDED', 'FULL STACK'].map((tag, i) => (
+                    <motion.span key={tag} className="hero-tag hover-target" whileHover={{ scale: 1.12, y: -4 }} transition={{ type: 'spring', stiffness: 400, damping: 15 }}>
+                      <GlintText text={tag} />
+                    </motion.span>
+                  ))}
+                </motion.div>
+
+                {/* View Work CTA */}
+                <motion.div className="hero-cta-wrap" initial={{ opacity: 0 }} animate={hasLoaded ? { opacity: 1 } : {}} transition={{ delay: 1.9, duration: 1 }}>
+                  <a href="#work" className="hero-cta hover-target">
+                    View Work
+                    <ChevronDown className="hero-cta-arrow" size={18} />
+                  </a>
+                </motion.div>
+              </div>
             </motion.div>
           </HeroPerspective>
 
@@ -1549,6 +1571,7 @@ export default function App() {
             <div className="scroll-line"><div className="scroll-progress-line" /></div>
           </motion.div>
         </section>
+        </div>
 
         {/* ── KINETIC DIVIDER ── */}
         <KineticDivider text="◆" count={40} />

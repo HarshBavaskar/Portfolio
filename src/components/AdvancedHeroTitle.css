@@ -1,0 +1,134 @@
+.tactical-title-container {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 8rem 2rem;
+}
+
+.tactical-wrapper {
+  position: relative;
+  padding: 2rem 4rem;
+  border: 1px solid transparent;
+  transition: border-color 0.3s;
+}
+
+.tactical-wrapper.tactical-active {
+  border-color: rgba(255, 92, 0, 0.2);
+}
+
+.hud-corner {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border: 2px solid transparent;
+  transition: border-color 0.3s;
+  pointer-events: none;
+}
+
+.tactical-active .hud-corner {
+  border-color: var(--orange, #ff5c00);
+}
+
+.top-left { top: -2px; left: -2px; border-right: none; border-bottom: none; }
+.top-right { top: -2px; right: -2px; border-left: none; border-bottom: none; }
+.bottom-left { bottom: -2px; left: -2px; border-right: none; border-top: none; }
+.bottom-right { bottom: -2px; right: -2px; border-left: none; border-top: none; }
+
+.hud-data-readout {
+  position: absolute;
+  top: -30px;
+  left: 0;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--orange, #ff5c00);
+  letter-spacing: 0.1em;
+  opacity: 0.8;
+  pointer-events: none;
+}
+
+.tactical-title-stack {
+  position: relative;
+}
+
+.tactical-text {
+  font-family: 'Inter', var(--sans), sans-serif;
+  font-weight: 900;
+  font-size: clamp(3rem, 10vw, 8rem);
+  text-align: center;
+  white-space: nowrap;
+  line-height: 1.0;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  user-select: none;
+  cursor: crosshair;
+}
+
+.base-text {
+  color: #ffffff;
+  transition: color 0.3s, -webkit-text-stroke 0.3s;
+}
+
+.tactical-active .base-text {
+  color: transparent;
+  -webkit-text-stroke: 1px rgba(255, 92, 0, 0.3);
+}
+
+.slice-1, .slice-2, .slice-3 {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  color: var(--orange, #ff5c00);
+  pointer-events: none;
+  text-shadow: 
+      0 0 10px rgba(255, 92, 0, 0.6),
+      0 0 25px rgba(255, 92, 0, 0.4),
+      0 0 50px rgba(255, 92, 0, 0.3),
+      0 15px 80px rgba(255, 92, 0, 0.2);
+}
+
+.slice-1 {
+  clip-path: polygon(0 0, 100% 0, 100% 35%, 0 35%);
+}
+
+.slice-2 {
+  clip-path: polygon(0 35%, 100% 35%, 100% 65%, 0 65%);
+  mix-blend-mode: screen;
+}
+
+.slice-3 {
+  clip-path: polygon(0 65%, 100% 65%, 100% 100%, 0 100%);
+}
+
+@media (max-width: 1024px) {
+  .tactical-text {
+    white-space: pre-wrap; 
+    font-size: clamp(2.5rem, 8vw, 4rem);
+  }
+}
+
+.ascii-brush-particle {
+  position: absolute;
+  font-family: var(--mono);
+  font-size: 14px;
+  color: var(--orange, #ff5c00);
+  pointer-events: none;
+  animation: brush-fade 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  text-shadow: 0 0 8px rgba(255, 92, 0, 0.8);
+  z-index: 5;
+  transform: translate(-50%, -50%);
+}
+
+@keyframes brush-fade {
+  0% {
+    opacity: 0.8;
+    transform: translate(-50%, -50%) scale(1);
+    filter: blur(0px);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -80%) scale(0.6) rotate(15deg);
+    filter: blur(2px);
+  }
+}

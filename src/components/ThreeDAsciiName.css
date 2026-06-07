@@ -1,0 +1,32 @@
+.ascii-hero-bg {
+  position: absolute;
+  inset: -10%;
+  width: 120%;
+  height: 120%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  user-select: none;
+  background: transparent;
+  pointer-events: none;
+}
+
+.ascii-text-bg {
+  margin: 0;
+  padding: 0;
+  font-family: 'JetBrains Mono', var(--mono), 'Consolas', monospace;
+  font-weight: 200;
+  font-size: clamp(10px, 1.8vw, 24px);
+  line-height: 1.0;
+  letter-spacing: 0;
+  white-space: pre;
+  text-align: center;
+  color: var(--orange, #ff5c00);
+  opacity: 0.5;
+  pointer-events: none;
+  text-shadow: 
+    0 0 10px rgba(255, 92, 0, 1),
+    0 0 30px rgba(255, 92, 0, 0.6);
+  will-change: contents;
+}

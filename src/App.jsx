@@ -5,7 +5,7 @@ import { EffectComposer, Bloom, Noise, Vignette, GodRays } from '@react-three/po
 import { BlendFunction } from 'postprocessing';
 import { motion, useScroll, useTransform, AnimatePresence, useReducedMotion, useInView, useMotionValue, useSpring, useVelocity } from 'framer-motion';
 void motion;
-import { Github, Linkedin, Mail, ArrowUpRight, Sun, Moon, ChevronDown, Shield, FlaskConical, Wrench } from 'lucide-react';
+import { Github, Linkedin, Mail, ArrowUpRight, ChevronDown, Shield, FlaskConical, Wrench } from 'lucide-react';
 import * as THREE from 'three';
 import Lenis from 'lenis';
 import 'lenis/dist/lenis.css';
@@ -1457,7 +1457,7 @@ export default function App() {
   const yLine2 = useTransform(heroProgress, [0, 1], [0, 90]);
 
   const [hasLoaded, setHasLoaded] = useState(false);
-  const [isDark, setIsDark] = useState(false);
+  const isDark = true;
 
   useEffect(() => { const t = setTimeout(() => setHasLoaded(true), 200); return () => clearTimeout(t); }, []);
 
@@ -1491,11 +1491,6 @@ export default function App() {
                 <ElasticButton href="mailto:hbavaskar6@gmail.com" className="availability" target="_blank">
                   <span /> OPEN TO COLLABORATE
                 </ElasticButton>
-              </motion.div>
-              <motion.div initial={{ opacity: 0, x: 25 }} animate={hasLoaded ? { opacity: 1, x: 0 } : {}} transition={{ delay: 0.9, duration: 1, ease: 'easeOut' }}>
-                <button className="theme-toggle hover-target" onClick={() => setIsDark(!isDark)}>
-                  {isDark ? <Sun size={18} /> : <Moon size={18} />}
-                </button>
               </motion.div>
             </div>
           </header>

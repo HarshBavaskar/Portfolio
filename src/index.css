@@ -15,7 +15,7 @@
   --text-muted:  #9e9a90;
   --text-ghost:  rgba(20, 18, 16, 0.04);
   --green:       #1a5c38;
-  --orange:      #ff5c00;
+  --orange:      #cc4a00;
   --lavender:    #7b6cb5;
   --sage:        #4d7a52;
   --charcoal:    #2a2826;
@@ -50,7 +50,7 @@ body.dark-theme {
   --grid-line:   rgba(255, 255, 255, 0.03);
   --grid-line-accent: rgba(255, 255, 255, 0.06);
   --cursor-ring:   #ffffff;
-  --cursor-trace:  rgba(255, 92, 0, 0.15);
+  --cursor-trace:  rgba(204, 74, 0, 0.15);
 }
 
 body.dark-theme .arch-card {
@@ -62,12 +62,12 @@ body.dark-theme .arch-card {
     background: #0c0c0c;
     /* Intricate 6-Layer Orange Bloom Stack */
     box-shadow: 
-      0 0 10px rgba(255, 92, 0, 0.3),
-      0 0 25px rgba(255, 92, 0, 0.2),
-      0 0 50px rgba(255, 92, 0, 0.15),
-      0 15px 80px rgba(255, 92, 0, 0.1),
-      0 30px 120px rgba(255, 92, 0, 0.08),
-      0 0 160px rgba(255, 92, 0, 0.05);
+      0 0 10px rgba(204, 74, 0, 0.3),
+      0 0 25px rgba(204, 74, 0, 0.2),
+      0 0 50px rgba(204, 74, 0, 0.15),
+      0 15px 80px rgba(204, 74, 0, 0.1),
+      0 30px 120px rgba(204, 74, 0, 0.08),
+      0 0 160px rgba(204, 74, 0, 0.05);
   }
 }
 body.dark-theme .arch-card-inner {
@@ -78,21 +78,21 @@ body.dark-theme .arch-card-inner {
 @media (hover: hover) {
   body.dark-theme .arch-card:hover .arch-card-inner {
     background: rgba(8, 8, 8, 0.98);
-    border-color: rgba(255, 92, 0, 0.5);
+    border-color: rgba(204, 74, 0, 0.5);
     /* Tactical Rim Glow */
     box-shadow: 
-      inset 1px 1.5px 1px rgba(255, 92, 0, 0.4),
+      inset 1px 1.5px 1px rgba(204, 74, 0, 0.4),
       inset -1px -1px 2px rgba(0, 0, 0, 0.9),
-      0 0 30px rgba(255, 92, 0, 0.1);
+      0 0 30px rgba(204, 74, 0, 0.1);
   }
 }
 @media (hover: hover) {
   body.dark-theme .arch-card:hover .arch-card-inner {
     background: #000000;
-    border-color: rgba(255, 92, 0, 0.3);
+    border-color: rgba(204, 74, 0, 0.3);
     box-shadow: 
       inset 0 1px 2px rgba(255, 255, 255, 0.1),
-      0 0 20px rgba(255, 92, 0, 0.05);
+      0 0 20px rgba(204, 74, 0, 0.05);
   }
 }
 body.dark-theme .arch-tech-pill {
@@ -1204,9 +1204,9 @@ body.dark-theme .bento-item:hover {
 }
 
 body.dark-theme .project-card { 
-  background: #080808; 
-  color: var(--text) !important; 
-  border: 1px solid rgba(255, 255, 255, 0.03); 
+  background: var(--orange); 
+  color: #fff !important; 
+  border: none; 
   box-shadow: none;
 }
 
@@ -1227,10 +1227,10 @@ body.dark-theme .project-card {
 
 body.dark-theme .project-card:hover {
   box-shadow: 
-    0 0 15px rgba(255, 92, 0, 0.4),
-    0 10px 40px rgba(255, 92, 0, 0.3),
-    0 30px 80px rgba(255, 92, 0, 0.2),
-    0 60px 150px rgba(255, 92, 0, 0.15),
+    0 0 15px rgba(204, 74, 0, 0.4),
+    0 10px 40px rgba(204, 74, 0, 0.3),
+    0 30px 80px rgba(204, 74, 0, 0.2),
+    0 60px 150px rgba(204, 74, 0, 0.15),
     inset 1px 2px 1px rgba(255, 255, 255, 0.15);
 }
 
@@ -1787,3 +1787,135 @@ body.dark-theme .hud-orbit {
 body.dark-theme .mechanical-cursor-wrap {
   mix-blend-mode: screen;
 }
+
+/* ══════════════════════════════════════════
+   ORANGE CARDS ARCHITECTURE (BRIGHT MODE EQUIVALENTS)
+   ══════════════════════════════════════════ */
+/* Forces all project cards and architecture cards to have an orange background with white text */
+body.dark-theme .project-card,
+body.dark-theme .arch-card,
+.project-card,
+.arch-card {
+  background: var(--orange) !important;
+  border-color: rgba(255, 255, 255, 0.22) !important;
+  color: #ffffff !important;
+}
+
+/* Hover background - slightly brighter/altered orange for a micro-interaction feel */
+body.dark-theme .project-card:hover,
+body.dark-theme .arch-card:hover,
+.project-card:hover,
+.arch-card:hover {
+  background: #e65300 !important; /* Brighter dark-orange highlight */
+  box-shadow: 
+    0 0 15px rgba(204, 74, 0, 0.4),
+    0 15px 45px rgba(204, 74, 0, 0.25) !important;
+}
+
+/* Inner card background needs to remain transparent so the card's orange shows through */
+body.dark-theme .arch-card-inner,
+.arch-card-inner {
+  background: transparent !important;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  box-shadow: none !important;
+}
+
+body.dark-theme .arch-card:hover .arch-card-inner,
+.arch-card:hover .arch-card-inner {
+  background: transparent !important;
+  border-color: rgba(255, 255, 255, 0.38) !important;
+  box-shadow: inset 1px 1.5px 1px rgba(255, 255, 255, 0.25) !important;
+}
+
+/* Tweak text visibility: Force all text, descriptions, metrics, titles inside project and arch cards to be white */
+.project-card,
+.project-card .project-summary,
+.project-card .project-year,
+.project-card .project-index,
+.project-card .project-bottom h6,
+.project-card .project-role,
+.project-card .project-bg-text,
+.project-card .project-link-hint,
+.project-card .glint-text,
+.arch-card,
+.arch-card .arch-card-title,
+.arch-card .arch-card-desc,
+.arch-card .arch-card-number,
+.arch-card .live-metric-value,
+.arch-card .live-metric-label {
+  color: #ffffff !important;
+  text-shadow: none !important; /* Remove any light/glow text shadows that clash */
+}
+
+/* Specific opacity tuning for descriptions and metadata to match bright-mode project card layout */
+.project-card .project-summary,
+.arch-card .arch-card-desc {
+  color: rgba(255, 255, 255, 0.82) !important;
+}
+
+.project-card .project-bg-text,
+.arch-card .arch-card-number,
+.arch-card .live-metric-label {
+  color: rgba(255, 255, 255, 0.72) !important;
+}
+
+/* GlintText override inside orange cards to make sure it doesn't try to use a white gradient */
+.project-card .glint-text,
+.arch-card .glint-text {
+  color: #ffffff !important;
+  background: none !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+/* On actual hover of the glint chars, let them stand out as dark charcoal cutouts on the orange background */
+.project-card .glint-char,
+.arch-card .glint-char {
+  color: #ffffff !important;
+}
+.project-card .glint-char:hover,
+.arch-card .glint-char:hover {
+  color: #0c0c0c !important; /* Dark cutout hover effect */
+  text-shadow: none !important;
+}
+
+/* Fix illustration watermarks to be white instead of black/color on the orange background */
+.project-card .arch-bg-illustration svg [fill]:not([fill="none"]),
+.arch-card .arch-bg-illustration svg [fill]:not([fill="none"]) {
+  fill: #ffffff !important;
+}
+.project-card .arch-bg-illustration svg [stroke]:not([stroke="none"]),
+.arch-card .arch-bg-illustration svg [stroke]:not([stroke="none"]) {
+  stroke: #ffffff !important;
+}
+
+.project-card .arch-bg-illustration svg *,
+.arch-card .arch-bg-illustration svg * {
+  color: #ffffff !important;
+}
+
+/* Customize tech pills inside orange cards to match the bright-mode layout */
+.project-card .tech-tag,
+.arch-card .arch-tech-pill {
+  color: rgba(255, 255, 255, 0.92) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.22) !important;
+}
+
+.project-card .tech-tag:hover,
+.arch-card .arch-tech-pill:hover {
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.14) !important;
+  border-color: rgba(255, 255, 255, 0.38) !important;
+}
+
+/* Corner pip inside arch cards */
+.arch-card .arch-card-corner {
+  background: #ffffff !important;
+}
+
+/* Hover link hint arrow/text */
+.project-card-link:hover .project-link-hint {
+  color: #ffffff !important;
+}
+
+

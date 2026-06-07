@@ -9,15 +9,22 @@ export default function ThreeDAsciiName() {
   const wrapRef = useRef(null);
 
   useEffect(() => {
-    // Dynamically calculate grid dimensions based on viewport to guarantee 100% coverage
-    // Match the CSS clamp(10px, 1.8vw, 24px)
-    const fontSize = Math.max(10, Math.min(24, window.innerWidth * 0.018));
-    const charWidth = fontSize * 0.6; // average monospace aspect ratio
-    const charHeight = fontSize * 1.0; // CSS line-height is 1.0
+    // Performant grid sizing: Cap resolution to keep cell updates lightning fast
+    const isMobile = window.innerWidth < 768;
+    const COLS = isMobile ? 55 : 105;
     
-    // Calculate required cols/rows, adding a 25% margin to cover the negative inset bleed
-    const COLS = Math.ceil((window.innerWidth * 1.25) / charWidth);
-    const ROWS = Math.ceil((window.innerHeight * 1.25) / charHeight);
+    // Character aspect ratio: height to width
+    const charAspectRatio = 0.58; 
+    
+    // Calculate ROWS to match viewport aspect ratio, capped at a sensible height
+    const targetRows = Math.ceil((window.innerHeight / window.innerWidth) * COLS / charAspectRatio * 1.25);
+    const ROWS = Math.min(isMobile ? 55 : 45, targetRows);
+    
+    // Compute dynamic font size so characters stretch perfectly to cover the negative inset bleed
+    const dynamicFontSize = (window.innerWidth * 1.25) / (COLS * charAspectRatio);
+    if (preRef.current) {
+      preRef.current.style.fontSize = `${dynamicFontSize}px`;
+    }
     
     const baseChars = [];
     
@@ -57,7 +64,7 @@ export default function ThreeDAsciiName() {
 
     // 4D Orbiters (Clifford Torus projection)
     const orbiters = [];
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 4; i++) { // Reduced from 6 to 4 orbiters to save calculations
       orbiters.push({
         a: Math.random() * Math.PI * 2,
         b: Math.random() * Math.PI * 2,
@@ -74,7 +81,8 @@ export default function ThreeDAsciiName() {
       if (!active || !preRef.current) return;
       requestAnimationFrame(tick);
       
-      if (time - lastTime < 40) return; 
+      // Throttle rendering to ~20 FPS (50ms) to conserve CPU
+      if (time - lastTime < 50) return; 
       lastTime = time;
 
       // Update 4D rotation time
@@ -126,10 +134,10 @@ export default function ThreeDAsciiName() {
           const vy = screenY - p.lastY;
           const velocity = Math.sqrt(vx * vx + vy * vy);
           
-          // Fast moving orbits get thicker trails
-          const dynamicRadius = Math.min(6, 2 + velocity * 0.3);
+          // Capped Dynamic Orbiter Radius
+          const dynamicRadius = Math.min(3, 1 + velocity * 0.1);
+          const steps = Math.min(3, Math.max(1, Math.floor(velocity / 3.5)));
           
-          const steps = Math.max(1, Math.floor(velocity / 2));
           for (let s = 1; s <= steps; s++) {
             const lerpX = p.lastX + (vx * (s / steps));
             const lerpY = p.lastY + (vy * (s / steps));
@@ -140,7 +148,7 @@ export default function ThreeDAsciiName() {
                 if (tx >= 0 && tx < COLS && ty >= 0 && ty < ROWS) {
                   const d = Math.sqrt((tx - lerpX)**2 + (ty - lerpY)**2);
                   if (d < dynamicRadius) {
-                    const intensity = (1 - (d / dynamicRadius)) * 0.85; // Hot 4D plasma
+                    const intensity = (1 - (d / dynamicRadius)) * 0.85; 
                     const idx = ty * COLS + tx;
                     heatMap[idx] = Math.max(heatMap[idx], intensity);
                   }
@@ -158,11 +166,11 @@ export default function ThreeDAsciiName() {
       const vy = mouse.gy - lastMouse.y;
       const velocity = Math.sqrt(vx * vx + vy * vy);
       
-      // Dynamic brush size based on speed
-      const dynamicRadius = Math.min(12, 4 + velocity * 0.4);
+      // Capped brush size for mouse
+      const dynamicRadius = Math.min(6, 2 + velocity * 0.15);
+      const steps = Math.min(4, Math.max(1, Math.floor(velocity / 3.5)));
 
-      // Interpolate mouse movement to draw continuous heat lines instead of dotted circles
-      const steps = Math.max(1, Math.floor(velocity / 2));
+      // Interpolate mouse movement
       if (mouse.gx !== -999) {
         for (let s = 1; s <= steps; s++) {
           const lerpX = lastMouse.x + (vx * (s / steps));
@@ -193,23 +201,18 @@ export default function ThreeDAsciiName() {
           const idx = y * COLS + x;
           
           // Cool down the heat
-          heatMap[idx] *= 0.88; // Controls how long the trail lingers
+          heatMap[idx] *= 0.88; 
           const heat = heatMap[idx];
 
           if (heat > 0.6) {
-            // Hot: chaotic intense glitch
             out += GLITCH[Math.floor(Math.random() * GLITCH.length)];
           } else if (heat > 0.15) {
-            // Warm: trailing off
             if (baseChars[y][x] === ' ') {
-              // Sparkles fading into the void
               out += (Math.random() < heat * 1.5) ? '.' : ' ';
             } else {
-              // Glitching original characters
               out += (Math.random() < heat) ? GLITCH[Math.floor(Math.random() * GLITCH.length)] : baseChars[y][x];
             }
           } else {
-            // Cold: ambient
             if (Math.random() < 0.0005) {
               out += GLITCH[Math.floor(Math.random() * GLITCH.length)];
             } else {

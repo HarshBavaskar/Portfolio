@@ -575,7 +575,7 @@ body.dark-theme .kinetic-divider::after {
   .decal-2 { bottom: 100%; left: 0; margin-bottom: 0.8rem; }
 }
 @media (max-width: 768px) {
-  .decal-2 { bottom: 25%; left: 8%; }
+  .decal-1, .decal-2 { display: none !important; }
 }
 
 .decal-line { width: 80px; height: 1px; background: currentColor; opacity: 0.4; }

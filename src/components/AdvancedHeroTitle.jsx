@@ -6,11 +6,12 @@ export default function AdvancedHeroTitle({ text1 = "HARSH", text2 = "BAVASKAR" 
   const containerRef = useRef(null);
   const [isHovered, setIsHovered] = useState(false);
   const [particles, setParticles] = useState([]);
+  const isLowEnd = typeof navigator !== 'undefined' && navigator.deviceMemory && navigator.deviceMemory <= 4;
   const lastSpawnRef = useRef({ x: 0, y: 0, time: 0 });
 
-  // Smooth springs for tracking the mouse over the text
-  const mouseX = useSpring(0, { stiffness: 150, damping: 20 });
-  const mouseY = useSpring(0, { stiffness: 150, damping: 20 });
+  // Smooth springs for tracking the mouse over the text (reduced on low-end)
+  const mouseX = useSpring(0, { stiffness: isLowEnd ? 100 : 150, damping: isLowEnd ? 30 : 20 });
+  const mouseY = useSpring(0, { stiffness: isLowEnd ? 100 : 150, damping: isLowEnd ? 30 : 20 });
 
   const handleMouseMove = (e) => {
     if (!containerRef.current) return;
@@ -27,7 +28,11 @@ export default function AdvancedHeroTitle({ text1 = "HARSH", text2 = "BAVASKAR" 
     const dy = e.clientY - lastSpawnRef.current.y;
     const dist = Math.sqrt(dx * dx + dy * dy);
 
-    if (dist > 15 || now - lastSpawnRef.current.time > 80) {
+    const spawnThreshold = isLowEnd ? 30 : 15;
+    const spawnInterval = isLowEnd ? 150 : 80;
+    const particleLifetime = isLowEnd ? 600 : 1000;
+    
+    if (dist > spawnThreshold || now - lastSpawnRef.current.time > spawnInterval) {
       const newParticle = {
         id: Math.random().toString(36).substring(2, 10),
         x: e.clientX - rect.left + (Math.random() * 20 - 10),
@@ -40,7 +45,7 @@ export default function AdvancedHeroTitle({ text1 = "HARSH", text2 = "BAVASKAR" 
       
       setTimeout(() => {
         setParticles(prev => prev.filter(p => p.id !== newParticle.id));
-      }, 1000);
+      }, particleLifetime);
     }
   };
 
@@ -50,10 +55,10 @@ export default function AdvancedHeroTitle({ text1 = "HARSH", text2 = "BAVASKAR" 
     setIsHovered(false);
   };
 
-  // Tactical data shifting slices
-  const slice1X = useTransform(mouseX, x => x * -0.06);
-  const slice2X = useTransform(mouseX, x => x * 0.08);
-  const slice3X = useTransform(mouseX, x => x * -0.03);
+  // Tactical data shifting slices (reduced on low-end)
+  const slice1X = useTransform(mouseX, x => x * (isLowEnd ? -0.03 : -0.06));
+  const slice2X = useTransform(mouseX, x => x * (isLowEnd ? 0.04 : 0.08));
+  const slice3X = useTransform(mouseX, x => x * (isLowEnd ? -0.015 : -0.03));
 
   return (
     <div 
@@ -80,8 +85,8 @@ export default function AdvancedHeroTitle({ text1 = "HARSH", text2 = "BAVASKAR" 
         <div className="hud-corner bottom-left"></div>
         <div className="hud-corner bottom-right"></div>
 
-        {/* Data Readout overlay when hovered */}
-        {isHovered && (
+        {/* Data Readout overlay when hovered (disabled on low-end) */}
+        {isHovered && !isLowEnd && (
           <motion.div 
             className="hud-data-readout"
             initial={{ opacity: 0, x: -10 }}

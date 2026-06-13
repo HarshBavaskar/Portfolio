@@ -11,7 +11,8 @@ export default function ThreeDAsciiName() {
   useEffect(() => {
     // Performant grid sizing: Cap resolution to keep cell updates lightning fast
     const isMobile = window.innerWidth < 768;
-    const COLS = isMobile ? 55 : 105;
+    const isLowEnd = navigator.deviceMemory && navigator.deviceMemory <= 4;
+    const COLS = isLowEnd ? 40 : (isMobile ? 55 : 85);
     
     // Character aspect ratio: height to width
     const charAspectRatio = 0.58; 
@@ -64,7 +65,8 @@ export default function ThreeDAsciiName() {
 
     // 4D Orbiters (Clifford Torus projection)
     const orbiters = [];
-    for (let i = 0; i < 4; i++) { // Reduced from 6 to 4 orbiters to save calculations
+    const orbiterCount = isLowEnd ? 2 : (isMobile ? 3 : 4);
+    for (let i = 0; i < orbiterCount; i++) {
       orbiters.push({
         a: Math.random() * Math.PI * 2,
         b: Math.random() * Math.PI * 2,
@@ -81,12 +83,13 @@ export default function ThreeDAsciiName() {
       if (!active || !preRef.current) return;
       requestAnimationFrame(tick);
       
-      // Throttle rendering to ~20 FPS (50ms) to conserve CPU
-      if (time - lastTime < 50) return; 
+      // Throttle rendering: 20 FPS on low-end, 30 FPS on normal devices
+      const throttleMs = isLowEnd ? 66 : 50;
+      if (time - lastTime < throttleMs) return; 
       lastTime = time;
 
-      // Update 4D rotation time
-      time4D += 0.03;
+      // Update 4D rotation time (slower on low-end devices)
+      time4D += isLowEnd ? 0.015 : 0.03;
       const R1 = 30; // Radius in X-W plane
       const R2 = 15; // Radius in Y-Z plane
       

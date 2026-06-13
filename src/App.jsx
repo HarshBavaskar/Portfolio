@@ -56,6 +56,7 @@ if (typeof window !== 'undefined') {
 
 function DotMatrix({ isDark = false }) {
   const reduceMotion = useReducedMotion();
+  const isLowEnd = typeof navigator !== 'undefined' && navigator.deviceMemory && navigator.deviceMemory <= 4;
   const contentRectsRef = useRef([]);
   const sunRef = useRef();
 
@@ -75,7 +76,7 @@ function DotMatrix({ isDark = false }) {
     return () => { window.removeEventListener('scroll', update); window.removeEventListener('resize', update); clearInterval(interval); };
   }, []);
 
-  if (reduceMotion) return null;
+  if (reduceMotion || isLowEnd) return null;
 
   return (
     <div className="dot-matrix-canvas" style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
@@ -90,28 +91,28 @@ function DotMatrix({ isDark = false }) {
         <SunSource ref={sunRef} isDark={isDark} />
         
         <InstancedDotGrid contentRectsRef={contentRectsRef} isDark={isDark} />
-        <EffectComposer disableNormalPass multisampling={4}>
+        <EffectComposer disableNormalPass multisampling={2}>
           <Bloom
             luminanceThreshold={isDark ? 0.2 : 0.8}
             mipmapBlur
-            intensity={isDark ? 1.8 : 0.25}
-            radius={0.4}
+            intensity={isDark ? 0.9 : 0.12}
+            radius={0.2}
             blendFunction={BlendFunction.SCREEN}
           />
-          {isDark && sunRef.current && (
+          {isDark && sunRef.current && !isLowEnd && (
             <GodRays 
               sun={sunRef.current} 
               exposure={0.25} 
               decay={0.96} 
               blur={0.8} 
-              samples={60} 
+              samples={30} 
               density={0.98} 
               weight={0.6} 
               clampMax={1.0} 
             />
           )}
-          <Vignette eskil={false} offset={0.1} darkness={isDark ? 0.65 : 0.15} />
-          <Noise opacity={isDark ? 0.03 : 0.012} blendFunction={BlendFunction.OVERLAY} />
+          <Vignette eskil={false} offset={0.1} darkness={isDark ? 0.3 : 0.08} />
+          <Noise opacity={isDark ? 0.01 : 0.005} blendFunction={BlendFunction.OVERLAY} />
         </EffectComposer>
       </Canvas>
     </div>
@@ -148,8 +149,9 @@ function MouseLight({ isDark }) {
 function InstancedDotGrid({ contentRectsRef, isDark }) {
   const meshRef = useRef();
   const dummy = useMemo(() => new THREE.Object3D(), []);
-  const SPACING = 24;
-  const INFLUENCE = 180;
+  const isLowEnd = typeof navigator !== 'undefined' && navigator.deviceMemory && navigator.deviceMemory <= 4;
+  const SPACING = isLowEnd ? 32 : 24;
+  const INFLUENCE = isLowEnd ? 120 : 180;
 
   const [grid, setGrid] = useState({ cols: 0, rows: 0, w: 0, h: 0 });
 
@@ -251,7 +253,7 @@ function InstancedDotGrid({ contentRectsRef, isDark }) {
 
   return (
     <instancedMesh ref={meshRef} args={[null, null, count]}>
-      <cylinderGeometry args={[1, 1, 1, 12]} />
+      <cylinderGeometry args={[1, 1, 1, isLowEnd ? 8 : 12]} />
       {/* High-visibility Glowing Orange for dark mode, Deeper Architectural Orange for bright mode */}
       <meshStandardMaterial
         color={isDark ? "#ff4d00" : "#111111"}
@@ -272,25 +274,26 @@ function InstancedDotGrid({ contentRectsRef, isDark }) {
 function BreathingSphere() {
   const meshRef = useRef(null);
   const reduceMotion = useReducedMotion();
+  const isLowEnd = typeof navigator !== 'undefined' && navigator.deviceMemory && navigator.deviceMemory <= 4;
   useFrame((state) => {
     if (!meshRef.current) return;
     const t = state.clock.elapsedTime;
-    const speed = reduceMotion ? 0.15 : 0.25;
-    const breathe = 1 + Math.sin(t * speed) * 0.025;
+    const speed = reduceMotion ? 0.15 : (isLowEnd ? 0.12 : 0.25);
+    const breathe = 1 + Math.sin(t * speed) * 0.015;
     meshRef.current.scale.setScalar(breathe * 2.2);
-    meshRef.current.rotation.y = t * 0.035;
-    meshRef.current.rotation.x = Math.sin(t * 0.018) * 0.08;
-    meshRef.current.position.y = Math.sin(t * 0.12) * 0.06;
+    meshRef.current.rotation.y = t * (isLowEnd ? 0.015 : 0.035);
+    meshRef.current.rotation.x = Math.sin(t * (isLowEnd ? 0.009 : 0.018)) * 0.04;
+    meshRef.current.position.y = Math.sin(t * (isLowEnd ? 0.06 : 0.12)) * 0.03;
   });
   return (
-    <Float floatIntensity={0.2} speed={0.35} rotationIntensity={0.08}>
+    <Float floatIntensity={isLowEnd ? 0.1 : 0.2} speed={isLowEnd ? 0.2 : 0.35} rotationIntensity={isLowEnd ? 0.04 : 0.08}>
       <mesh ref={meshRef}>
-        <icosahedronGeometry args={[1, 3]} />
-        <meshStandardMaterial color="#b0a898" roughness={0.9} metalness={0.1} wireframe transparent opacity={reduceMotion ? 0.05 : 0.07} />
+        <icosahedronGeometry args={[1, isLowEnd ? 2 : 3]} />
+        <meshStandardMaterial color="#b0a898" roughness={0.9} metalness={0.1} wireframe transparent opacity={reduceMotion ? 0.03 : (isLowEnd ? 0.04 : 0.07)} />
       </mesh>
       <mesh scale={2.0}>
-        <sphereGeometry args={[1, 32, 32]} />
-        <meshStandardMaterial color="#c8c0b8" roughness={1} metalness={0} transparent opacity={0.015} />
+        <sphereGeometry args={[1, isLowEnd ? 16 : 32, isLowEnd ? 16 : 32]} />
+        <meshStandardMaterial color="#c8c0b8" roughness={1} metalness={0} transparent opacity={isLowEnd ? 0.008 : 0.015} />
       </mesh>
     </Float>
   );
@@ -300,7 +303,8 @@ function BreathingSphere() {
 
 function FloatingMotes() {
   const reduceMotion = useReducedMotion();
-  const count = reduceMotion ? 25 : 60;
+  const isLowEnd = typeof navigator !== 'undefined' && navigator.deviceMemory && navigator.deviceMemory <= 4;
+  const count = reduceMotion ? 15 : (isLowEnd ? 30 : 60);
   const meshRef = useRef();
   const particles = useMemo(() => {
     const positions = new Float32Array(count * 3);
@@ -1109,7 +1113,24 @@ const RevealText = ({ text, className = '', delay = 0 }) => {
 const FadeUp = ({ children, className = '', delay = 0, y = 35 }) => {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: '-6%' });
-  return <motion.div ref={ref} className={className} initial={{ opacity: 0, y, filter: 'blur(4px)' }} animate={isInView ? { opacity: 1, y: 0, filter: 'blur(0px)' } : {}} transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1], delay }}>{children}</motion.div>;
+  const isLowEnd = typeof navigator !== 'undefined' && navigator.deviceMemory && navigator.deviceMemory <= 4;
+  const reduceMotion = useReducedMotion();
+  
+  if (reduceMotion) {
+    return <div ref={ref} className={className}>{children}</div>;
+  }
+  
+  return (
+    <motion.div 
+      ref={ref} 
+      className={className} 
+      initial={isLowEnd ? { opacity: 0, y } : { opacity: 0, y, filter: 'blur(4px)' }} 
+      animate={isInView ? (isLowEnd ? { opacity: 1, y: 0 } : { opacity: 1, y: 0, filter: 'blur(0px)' }) : {}} 
+      transition={{ duration: isLowEnd ? 0.6 : 0.9, ease: [0.22, 1, 0.36, 1], delay }}
+    >
+      {children}
+    </motion.div>
+  );
 };
 
 /* ═══════════════════════════════════════════════════════════

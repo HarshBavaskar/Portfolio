@@ -10,7 +10,7 @@ Robotics, embedded systems and computer vision. Live at [harshbavaskar.github.io
 | 01 | The Rover | Pinned scroll: the NASA HERC rover explodes into its six subsystems, then drives out of frame to reveal the 5th-in-the-world result. |
 | 02 | About | Statement that fills in as you read; odometer stats. |
 | 03 | Path | Horizontal tape-deck timeline from first semester to the C-suite. |
-| 04 | Work | Stacked spec sheets. Each project runs a live, interactive model on its own "device" screen. |
+| 04 | Work | Stacked spec sheets — Desk, TUX OS, NatLang, Polaris, AIRO Bot, BlockBallot, Footfall Counter, PRISMRx — each on its own "device" screen with a live model or real product screens. |
 | 05 | Toolkit | A hardware keyboard of skills — hover, click, or type on your own keyboard. |
 | 06 | Record | Awards, education, languages. |
 | 07 | Contact | A dark sheet that lifts over the page. |

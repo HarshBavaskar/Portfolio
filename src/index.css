@@ -232,6 +232,9 @@ main { position: relative; z-index: 2; }
 }
 .menu a .mono { color: var(--mute); }
 .menu.is-open a { opacity: 1; transform: none; }
+.menu__early { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 18px; opacity: 0; transition: opacity 0.5s var(--ease); }
+.menu__early a { font-size: 11px; letter-spacing: 0.06em; padding: 6px 0; border: 0; color: var(--signal); transform: none; }
+.menu.is-open .menu__early { opacity: 1; }
 
 /* ── Grid overlay (press G) ────────────────────────────── */
 .gridlay { position: fixed; inset: 0; z-index: 80; pointer-events: none; opacity: 0; transition: opacity 0.3s; }
@@ -442,7 +445,9 @@ main { position: relative; z-index: 2; }
 .wk__metric { display: flex; align-items: baseline; gap: 12px; padding-top: 14px; border-top: 1px solid var(--line); }
 .wk__metric strong { font-size: clamp(28px, 2.6vw, 44px); font-weight: 500; letter-spacing: -0.045em; line-height: 1; white-space: nowrap; }
 .wk__meta { display: flex; gap: 12px; align-items: baseline; font-size: 14px; }
-.wk__info .btn { margin-top: 6px; }
+.wk__actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 6px; }
+.btn--signal { background: var(--signal); color: #fff; }
+.btn--line { background: transparent; color: var(--fg); box-shadow: inset 0 0 0 1px var(--line-strong); }
 .wk__also { padding-block: 48px 0; }
 .wk__also p { font-size: 17px; max-width: 70ch; padding-top: 18px; border-top: 1px solid var(--line); }
 
@@ -615,6 +620,7 @@ main { position: relative; z-index: 2; }
 .ct__arrow { display: inline-block; transition: transform 0.6s var(--ease), color 0.3s; }
 .ct__mail:hover .ct__arrow { transform: translate(0.12em, -0.12em); color: var(--signal); }
 .ct__row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 40px; }
+.ct__early { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-top: 28px; }
 .ft { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-top: auto; padding-block: 24px; border-top: 1px solid var(--line); }
 .ct__sheet .wrap:first-child { padding-bottom: clamp(80px, 14vh, 160px); }
 

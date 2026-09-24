@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef } from 'react';
 import { gsap, SplitText, scrollTo, finePointer } from '../lib/motion';
-import { links } from '../data';
+import { links, early } from '../data';
+import { wipeTo } from '../early/wipe';
 import Magnetic from '../components/Magnetic';
 import Clock from '../components/Clock';
 
@@ -43,6 +44,14 @@ export default function Contact() {
             <Magnetic href={links.linkedin} target="_blank" rel="noreferrer" className="btn btn--inv">LinkedIn ↗</Magnetic>
             <Magnetic href={links.github} target="_blank" rel="noreferrer" className="btn btn--inv">GitHub ↗</Magnetic>
           </div>
+          <p className="ct__early mono">
+            <span className="dim">Early access</span>
+            {early.map((e) => (
+              <a key={e.href} href={e.href} className="ulink" onClick={(ev) => { ev.preventDefault(); wipeTo(e.href, { color: e.color, ink: e.ink, label: e.wipe }); }}>
+                {e.label} →
+              </a>
+            ))}
+          </p>
         </div>
         <footer className="ft wrap mono">
           <span>© 2026 Harsh Bavaskar</span>

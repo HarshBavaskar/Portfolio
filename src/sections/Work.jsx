@@ -4,6 +4,9 @@ import { projects, alsoBuilt } from '../data';
 import Screen from '../components/Screen';
 import TabScreen from '../components/TabScreen';
 import Magnetic from '../components/Magnetic';
+import { wipeTo } from '../early/wipe';
+
+const toEarly = (e) => (ev) => { ev.preventDefault(); wipeTo(e.href, { color: e.color, ink: e.ink, label: e.wipe }); };
 
 function Device({ p, i }) {
   return (
@@ -94,10 +97,19 @@ export default function Work() {
                   <div className="chips wk__in">
                     {p.stack.map((s) => <span className="chip mono" key={s}>{s}</span>)}
                   </div>
-                  {p.href && (
-                    <Magnetic href={p.href} target="_blank" rel="noreferrer" className="btn wk__in">
-                      {p.id === 'desk' ? 'About Desk' : 'View source'} <span aria-hidden="true">↗</span>
-                    </Magnetic>
+                  {(p.early || p.href) && (
+                    <div className="wk__actions wk__in">
+                      {p.early && (
+                        <Magnetic href={p.early.href} className="btn btn--signal" onClick={toEarly(p.early)}>
+                          {p.early.label} <span aria-hidden="true">→</span>
+                        </Magnetic>
+                      )}
+                      {p.href && (
+                        <Magnetic href={p.href} target="_blank" rel="noreferrer" className={`btn${p.early ? ' btn--line' : ''}`}>
+                          {p.id === 'desk' ? 'About Desk' : 'View source'} <span aria-hidden="true">↗</span>
+                        </Magnetic>
+                      )}
+                    </div>
                   )}
                 </div>
                 <Device p={p} i={i} />

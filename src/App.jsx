@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useState } from 'react';
-import { gsap, ScrollTrigger, SplitText, initScroll, setTheme, bus, lockScroll } from './lib/motion';
+import { gsap, ScrollTrigger, SplitText, initScroll, setTheme, bus, lockScroll, scrollTo } from './lib/motion';
 import Preloader from './components/Preloader';
+import { wipeArrive } from './early/wipe';
 import Cursor from './components/Cursor';
 import Nav from './components/Nav';
 import GLStage from './components/GLStage';
@@ -20,6 +21,7 @@ export default function App() {
   useLayoutEffect(() => {
     history.scrollRestoration = 'manual';
     window.scrollTo(0, 0);
+    wipeArrive(); // coming back from an early-access page
     const stop = initScroll();
     lockScroll(true);
     return stop;
@@ -69,6 +71,9 @@ export default function App() {
       });
     });
     ScrollTrigger.refresh();
+    // links like ../#work-tux land on their section once everything is measured
+    const hash = location.hash;
+    if (hash && document.querySelector(hash)) requestAnimationFrame(() => scrollTo(hash));
     return () => ctx.revert();
   }, [ready]);
 

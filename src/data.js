@@ -4,6 +4,11 @@ export const links = {
   linkedin: 'https://linkedin.com/in/harsh-bavaskar',
 };
 
+export const early = [
+  { href: 'tux/', label: 'TUX OS early access', color: '#000000', ink: '#FFFFFF', wipe: 'TUX' },
+  { href: 'desk/', label: 'Desk testing', color: '#F3F1EC', ink: '#1D1C1A', wipe: 'Desk' },
+];
+
 export const chapters = [
   { id: 'top', n: '00', title: 'Index' },
   { id: 'rover', n: '01', title: 'The Rover' },
@@ -91,6 +96,7 @@ export const projects = [
     metric: ['2', 'roles — students and faculty, one app'],
     href: 'https://github.com/HarshBavaskar/Desk',
     hint: 'Product screens',
+    early: { href: 'desk/', label: 'Join the Desk test', color: '#F3F1EC', ink: '#1D1C1A', wipe: 'Desk' },
     screens: [
       ['home', 'Home'], ['assignments', 'Tasks'], ['study-note', 'Notes'], ['exams', 'Exams'], ['faculty', 'Faculty'],
     ].map(([f, label]) => ({ type: 'img', src: `work/desk/${f}.webp`, label })),
@@ -108,6 +114,7 @@ export const projects = [
     stack: ['Python host', 'Claude Agent SDK', 'Local LLM', 'Vanilla JS shell', 'Native perception'],
     metric: ['7', 'specialist agents, one conversation'],
     hint: 'Product screens · private repo',
+    early: { href: 'tux/', label: 'Get early access', color: '#000000', ink: '#FFFFFF', wipe: 'TUX' },
     screens: [
       { type: 'img', src: 'work/tux/desktop.webp', label: 'Desktop' },
       { type: 'img', src: 'work/tux/focus.webp', label: 'Focus' },

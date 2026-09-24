@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { gsap, bus, scrollTo, ScrollTrigger, lockScroll } from '../lib/motion';
 import { toggleSound, click } from '../lib/sound';
-import { chapters } from '../data';
+import { chapters, early } from '../data';
+import { wipeTo } from '../early/wipe';
 import Clock from './Clock';
 
 export default function Nav() {
@@ -67,6 +68,13 @@ export default function Nav() {
             <span className="mono">{c.n}</span>{c.title}
           </a>
         ))}
+        <p className="menu__early mono" style={{ transitionDelay: open ? '0.45s' : '0s' }}>
+          {early.map((e) => (
+            <a key={e.href} href={e.href} tabIndex={open ? 0 : -1} onClick={(ev) => { ev.preventDefault(); wipeTo(e.href, { color: e.color, ink: e.ink, label: e.wipe }); }}>
+              {e.label} →
+            </a>
+          ))}
+        </p>
       </nav>
     </header>
   );

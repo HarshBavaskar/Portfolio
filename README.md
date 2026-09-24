@@ -17,6 +17,19 @@ Robotics, embedded systems and computer vision. Live at [harshbavaskar.github.io
 
 Small things: optional synthesised UI clicks (Sound in the nav), a live Mumbai clock, and **press G** to see the 12-column grid.
 
+## Early-access pages
+
+- **`/tux/`** — TUX OS early access, in TUX's own Space Black. The dot-matrix avatar changes mood with the form: cyan while you type, violet while it sends, green when you're in.
+- **`/desk/`** — Desk testing, for students and teachers only. Six Classroom cards collapse into one Desk list.
+
+Sign-ups go to a Google Sheet through a small Apps Script (`scripts/early-access.gs`): one tab per product, one row per email, and each person is told their place in the queue. To connect it:
+
+1. Create a blank Google Sheet → **Extensions → Apps Script** → paste `scripts/early-access.gs` → Save.
+2. **Deploy → New deployment → Web app**, execute as *Me*, access *Anyone*. Copy the URL.
+3. Put the URL in `src/early/config.js` (or set `VITE_SIGNUP_ENDPOINT` at build time).
+
+Until it's connected, the forms open a pre-filled email instead, so no sign-up is lost.
+
 ## Stack
 
 - **React + Vite**

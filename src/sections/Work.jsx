@@ -77,7 +77,7 @@ export default function Work() {
                 <span>04.{i + 1}</span>
                 <span>{p.kind}</span>
                 <span>{p.year}{p.fresh && <b className="tag">New</b>}</span>
-                {p.href ? <a href={p.href} target="_blank" rel="noreferrer" className="ulink">Source ↗</a> : <span className="dim">Hardware</span>}
+                {p.href ? <a href={p.href} target="_blank" rel="noreferrer" className="ulink">Source ↗</a> : <span className="dim">{p.id === 'tux' ? 'Private' : 'Hardware'}</span>}
               </div>
               <div className="wk__body wrap grid">
                 <div className="wk__info">

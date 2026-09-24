@@ -297,6 +297,8 @@ main { position: relative; z-index: 2; }
 /* ── 01 Rover ──────────────────────────────────────────── */
 .rv { position: relative; height: 100vh; overflow: hidden; }
 .rv__head { position: absolute; top: calc(var(--nav-h) + 18px); left: 0; right: 0; display: flex; justify-content: space-between; gap: 16px; }
+.rv__step { display: none; }
+.rv.is-steps .rv__step { display: inline; color: var(--signal); }
 .rv__claim {
   position: absolute;
   left: 0;
@@ -479,6 +481,7 @@ main { position: relative; z-index: 2; }
 .tabs__pane { position: absolute; inset: 0; }
 .tabs__pane .screen__canvas { height: 100%; aspect-ratio: auto; }
 .tabs__media { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 0 0; }
+.tabs__media.is-contain { inset: 6%; width: 88%; height: 88%; object-fit: contain; object-position: 50% 50%; }
 .tabs__media.is-phone { left: 50%; top: 5%; width: auto; height: 90%; aspect-ratio: 358 / 804; transform: translateX(-50%); border-radius: 14px; object-fit: cover; box-shadow: 0 0 0 1px rgba(233, 230, 223, 0.18); }
 .tabs__pane .device__readout { display: none; }
 .tabs__keys { display: flex; gap: 6px; margin-top: 10px; }

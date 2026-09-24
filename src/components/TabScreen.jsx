@@ -48,7 +48,7 @@ export default function TabScreen({ items, auto = 0, tone = 'light', name }) {
         {items.map((it, k) => (
           <div className="tabs__pane" key={it.label} style={{ visibility: k === 0 ? 'inherit' : 'hidden' }}>
             {it.type === 'img' && (
-              <img className="tabs__media" src={url(it.src)} alt={`${name} — ${it.label}`} width="1440" height="900" loading="lazy" decoding="async" />
+              <img className={`tabs__media${it.fit === 'contain' ? ' is-contain' : ''}`} src={url(it.src)} alt={`${name} — ${it.label}`} width="1440" height="900" loading="lazy" decoding="async" />
             )}
             {it.type === 'video' && (
               <video

@@ -2,7 +2,7 @@ import { useLayoutEffect, useRef } from 'react';
 import { gsap } from '../lib/motion';
 import { projects, alsoBuilt } from '../data';
 import Screen from '../components/Screen';
-import DeskScreen from '../components/DeskScreen';
+import TabScreen from '../components/TabScreen';
 import Magnetic from '../components/Magnetic';
 
 function Device({ p, i }) {
@@ -11,12 +11,12 @@ function Device({ p, i }) {
       <div className="device__top mono">
         <i className="screw" /><span>{p.name}</span><span className="dim">{String(i + 1).padStart(2, '0')} / {String(projects.length).padStart(2, '0')}</span><i className="led" /><i className="screw" />
       </div>
-      <div className={`device__screen${p.id === 'desk' ? ' is-light' : ''}`} data-cursor={p.id === 'desk' ? undefined : 'Play'}>
-        {p.id === 'desk' ? <DeskScreen /> : <Screen id={p.id} />}
+      <div className={`device__screen${p.screens ? ' is-tabs' : ''}`} data-cursor={p.screens ? undefined : 'Play'}>
+        {p.screens ? <TabScreen items={p.screens} auto={p.auto} tone={p.tone} name={p.name} /> : <Screen id={p.id} />}
       </div>
       <div className="device__foot mono">
         <i className="screw" />
-        <span className="dim">{p.id === 'desk' ? 'Product screens' : p.hint || 'Live model'}</span>
+        <span className="dim">{p.hint || 'Live model'}</span>
         <i className="screw" />
       </div>
     </div>

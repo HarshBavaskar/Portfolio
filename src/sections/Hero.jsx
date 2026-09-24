@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef } from 'react';
 import { gsap, SplitText, isDesktop, reduced } from '../lib/motion';
-import { roverState, roverApi } from '../gl/rover';
+import { roverState, roverApi } from '../gl/state';
 
 const HERO_DIST = 1.55;
 

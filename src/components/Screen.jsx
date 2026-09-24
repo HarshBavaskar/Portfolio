@@ -12,6 +12,8 @@ export default function Screen({ id }) {
     const demo = demos[id]();
     const ptr = { x: 0, y: 0, inside: false };
     let w = 0, h = 0, raf = 0, running = false, last = 0, t = 0, tick = 0;
+    // phones get 30 fps — the models read the same, the battery lasts longer
+    const minDt = matchMedia('(pointer: coarse)').matches ? 1 / 32 : 0;
 
     const size = () => {
       const r = el.getBoundingClientRect();
@@ -22,12 +24,14 @@ export default function Screen({ id }) {
       c.setTransform(dpr, 0, 0, dpr, 0, 0);
     };
     const loop = (now) => {
-      const dt = Math.min(0.05, (now - last) / 1000 || 0.016);
+      raf = running ? requestAnimationFrame(loop) : 0;
+      const raw = (now - last) / 1000 || 0.016;
+      if (raw < minDt) return;
+      const dt = Math.min(0.05, raw);
       last = now;
       t += dt;
       demo.frame(c, w, h, t, dt, ptr);
       if ((tick += dt) > 0.12) { tick = 0; readout.current.textContent = demo.readout; }
-      if (running) raf = requestAnimationFrame(loop);
     };
     const ro = new ResizeObserver(size);
     ro.observe(el);

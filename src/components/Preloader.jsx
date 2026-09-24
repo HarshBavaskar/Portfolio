@@ -10,11 +10,14 @@ export default function Preloader({ onDone }) {
   useLayoutEffect(() => {
     const ctx = gsap.context(() => {
       const n = { v: 0 };
+      // a second visit in the same session doesn't need the full count
+      let seen = false;
+      try { seen = sessionStorage.getItem('hb-seen') === '1'; sessionStorage.setItem('hb-seen', '1'); } catch { /* storage blocked */ }
       const cells = gsap.utils.toArray('.pre__cell');
       const tl = gsap.timeline({ paused: true });
       tl.to(n, {
         v: 100,
-        duration: reduced ? 0.4 : 1.9,
+        duration: reduced ? 0.4 : seen ? 0.8 : 1.9,
         ease: 'power3.inOut',
         onUpdate: () => {
           const v = Math.round(n.v);

@@ -5,6 +5,7 @@ import { ScrambleTextPlugin } from 'gsap/ScrambleTextPlugin';
 import Lenis from 'lenis';
 
 gsap.registerPlugin(ScrollTrigger, SplitText, ScrambleTextPlugin);
+ScrollTrigger.config({ ignoreMobileResize: true });
 gsap.defaults({ ease: 'expo.out', duration: 1.1 });
 
 export { gsap, ScrollTrigger, SplitText };

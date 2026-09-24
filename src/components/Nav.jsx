@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { gsap, bus, scrollTo, ScrollTrigger } from '../lib/motion';
+import { gsap, bus, scrollTo, ScrollTrigger, lockScroll } from '../lib/motion';
 import { toggleSound, click } from '../lib/sound';
 import { chapters } from '../data';
 import Clock from './Clock';
@@ -9,6 +9,7 @@ export default function Nav() {
   const num = useRef(null);
   const bar = useRef(null);
   const [soundOn, setSoundOn] = useState(false);
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     const off = bus.on('chapter', (i) => {
@@ -25,7 +26,13 @@ export default function Nav() {
     return () => { off(); st.kill(); };
   }, []);
 
-  const go = (id) => (e) => { e.preventDefault(); click(1200); scrollTo(`#${id}`); };
+  const go = (id) => (e) => {
+    e.preventDefault();
+    click(1200);
+    if (open) { setOpen(false); lockScroll(false); }
+    scrollTo(`#${id}`);
+  };
+  const toggle = () => { lockScroll(!open); setOpen(!open); };
 
   return (
     <header className="nav">
@@ -50,7 +57,17 @@ export default function Nav() {
         </button>
         <span className="nav__clock"><Clock /></span>
       </div>
+      <button type="button" className="nav__menu mono" aria-expanded={open} aria-controls="menu" onClick={toggle}>
+        {open ? 'Close' : 'Menu'}
+      </button>
       <div className="nav__progress" aria-hidden="true"><i ref={bar} /></div>
+      <nav id="menu" className={`menu${open ? ' is-open' : ''}`} aria-label="Chapters" aria-hidden={!open}>
+        {chapters.slice(1).map((c, k) => (
+          <a key={c.id} href={`#${c.id}`} onClick={go(c.id)} style={{ transitionDelay: open ? `${0.12 + k * 0.04}s` : '0s' }} tabIndex={open ? 0 : -1}>
+            <span className="mono">{c.n}</span>{c.title}
+          </a>
+        ))}
+      </nav>
     </header>
   );
 }

@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef } from 'react';
 import { gsap, isDesktop } from '../lib/motion';
-import { roverState } from '../gl/rover';
+import { roverState } from '../gl/state';
 import { subsystems } from '../data';
 
 export default function Rover() {
@@ -18,7 +18,7 @@ export default function Rover() {
         scrollTrigger: {
           trigger: root.current,
           start: 'top top',
-          end: () => `+=${innerHeight * 5.5}`,
+          end: () => `+=${innerHeight * (isDesktop() ? 5.5 : 4.5)}`,
           pin: true,
           scrub: 0.6,
           invalidateOnRefresh: true,

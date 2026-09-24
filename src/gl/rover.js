@@ -1,37 +1,24 @@
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { gsap, theme } from '../lib/motion';
+import { roverState } from './state';
 
 /*
   A rover drawn like an engineering figure: paper-coloured faces hide the
   back edges, ink edge lines carry the form. Six subsystems explode apart
   on scroll; the one being described turns signal orange.
+
+  Every group of parts that moves together is merged into one mesh and one
+  line set, so the whole figure costs ~30 draw calls.
 */
-
-// Scroll-driven state, written by the sections and read every frame.
-export const roverState = {
-  cx: 0.7, cy: 0.42, // screen-space centre (0..1)
-  dist: 1, // camera distance multiplier
-  explode: 0, // 0 assembled → 1 fully exploded
-  focus: -1, // highlighted subsystem, -1 none
-  turn: 0, // scroll-driven yaw
-  auto: 1, // idle rotation weight
-  drive: 0, // 0..1 drive-off distance
-  lock: 0, // 0 free yaw → 1 yaw follows lockYaw
-  lockYaw: -0.62,
-  opacity: 1, // scroll-driven
-  intro: 0, // preloader reveal
-  anchors: Array.from({ length: 6 }, () => ({ x: 0, y: 0 })),
-};
-
-// Imperative handle (drag) for the live renderer.
-export const roverApi = { current: null };
 
 const SIGNAL = new THREE.Color('#FF5B14');
 const ORDER = [0, 1, 2, 3, 4, 5];
 const STAGGER = [0, 0.1, 0.05, 0.14, 0.02, 0.08];
+const small = () => innerWidth < 700;
 
 export function createRover(canvas) {
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' });
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: small() ? 'low-power' : 'high-performance' });
   renderer.setClearColor(0x000000, 0);
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(28, 1, 0.1, 60);
@@ -39,7 +26,7 @@ export function createRover(canvas) {
 
   const faceMat = new THREE.MeshBasicMaterial({ polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 });
   const subMats = ORDER.map(() => new THREE.LineBasicMaterial());
-  const glow = ORDER.map(() => 0); // highlight amount per subsystem (not a glow — a colour shift)
+  const glow = ORDER.map(() => 0); // highlight amount per subsystem (a colour shift, not a glow)
   const groundMat = new THREE.LineBasicMaterial({ transparent: true, opacity: 0.35 });
 
   const root = new THREE.Group(); // yaw + turntable
@@ -49,17 +36,26 @@ export function createRover(canvas) {
 
   const parts = [];
   const spinners = [];
+  const buckets = new Map();
+  const M = new THREE.Matrix4(), Q = new THREE.Quaternion(), NOQ = new THREE.Quaternion(), ONE = new THREE.Vector3(1, 1, 1);
   const tmp = new THREE.Vector3();
 
-  function addPart(geo, sub, dir, pos, rot, parent = body) {
-    const g = new THREE.Group();
-    g.add(new THREE.Mesh(geo, faceMat));
-    g.add(new THREE.LineSegments(new THREE.EdgesGeometry(geo, 24), subMats[sub]));
-    g.position.copy(pos);
-    if (rot) g.rotation.set(rot[0], rot[1], rot[2]);
-    parent.add(g);
-    parts.push({ g, base: g.position.clone(), dir, sub });
-    return g;
+  const bucket = (key, sub, dir, pivot = null, spin = false) => {
+    if (!buckets.has(key)) buckets.set(key, { sub, dir, pivot, spin, faces: [], edges: [] });
+    return buckets.get(key);
+  };
+  const strip = (g) => { g.deleteAttribute('normal'); g.deleteAttribute('uv'); return g; };
+  function put(b, geo, matrix) {
+    const f = strip(geo.clone());
+    const e = new THREE.EdgesGeometry(geo, 24);
+    if (matrix) { f.applyMatrix4(matrix); e.applyMatrix4(matrix); }
+    b.faces.push(f);
+    b.edges.push(e);
+    geo.dispose();
+  }
+  function addPart(geo, sub, dir, pos, rot, quat) {
+    const q = quat || (rot ? Q.setFromEuler(new THREE.Euler(rot[0], rot[1], rot[2])) : NOQ);
+    put(bucket(`${sub}:${dir.x},${dir.y},${dir.z}`, sub, dir), geo, M.compose(pos, q, ONE));
   }
   const box = (w, h, d) => new THREE.BoxGeometry(w, h, d);
   const cyl = (r, h, s = 20) => new THREE.CylinderGeometry(r, r, h, s);
@@ -68,10 +64,8 @@ export function createRover(canvas) {
   const X = [0, 0, Math.PI / 2]; // cylinder axis → x
 
   function link(a, b, t, sub, dir) {
-    const len = a.distanceTo(b);
-    const geo = box(len, t, t);
-    const g = addPart(geo, sub, dir, a.clone().add(b).multiplyScalar(0.5));
-    g.quaternion.setFromUnitVectors(v(1, 0, 0), tmp.copy(b).sub(a).normalize());
+    const q = new THREE.Quaternion().setFromUnitVectors(v(1, 0, 0), tmp.copy(b).sub(a).normalize());
+    addPart(box(a.distanceTo(b), t, t), sub, dir, a.clone().add(b).multiplyScalar(0.5), null, q);
   }
 
   /* 01 Chassis */
@@ -89,12 +83,12 @@ export function createRover(canvas) {
     const z = s * 0.3;
     const d = v(0, 0, s * 0.36);
     const P = v(0.08, 0.47, z), F = v(0.52, 0.3, z), B = v(-0.24, 0.34, z);
-    const M = v(0, 0.28, z), R = v(-0.5, 0.28, z);
+    const Mm = v(0, 0.28, z), R = v(-0.5, 0.28, z);
     link(P, F, 0.028, 2, d);
     link(P, B, 0.028, 2, d);
-    link(B, M, 0.024, 2, d);
+    link(B, Mm, 0.024, 2, d);
     link(B, R, 0.024, 2, d);
-    for (const top of [F, M, R]) link(top, v(top.x, 0.2, z), 0.022, 2, d);
+    for (const top of [F, Mm, R]) link(top, v(top.x, 0.2, z), 0.022, 2, d);
     addPart(cyl(0.032, 0.07), 2, d, P, Z);
     addPart(cyl(0.026, 0.06), 2, d, B, Z);
     addPart(box(0.02, 0.16, 0.02), 2, d, v(-0.02, 0.55, z * 0.95));
@@ -102,37 +96,34 @@ export function createRover(canvas) {
 
   /* 02 Drivetrain · 04 Wheels */
   const R0 = 0.14, W0 = 0.1;
+  const grousers = small() ? 10 : 14;
+  let wi = 0;
   for (const s of [1, -1]) {
     for (const x of [0.52, 0, -0.5]) {
       const dD = v(0, -0.02, s * 0.62);
       addPart(cyl(0.042, 0.1), 1, dD, v(x, 0.14, s * 0.27), Z);
       addPart(box(0.075, 0.075, 0.05), 1, dD, v(x, 0.14, s * 0.335));
 
-      const wheel = new THREE.Group();
-      addPart(cyl(R0, W0, 36), 3, v(0, -0.04, s * 0.95), v(x, 0.14, s * 0.41), Z).add(wheel);
-      // wheel details ride inside a spinner so the tread can roll
+      // each wheel is its own group, pivoting on its hub so the tread can roll
+      const w = bucket(`w${wi++}`, 3, v(0, -0.04, s * 0.95), v(x, 0.14, s * 0.41), true);
+      const tire = cyl(R0, W0, small() ? 28 : 36);
+      tire.rotateX(Math.PI / 2);
+      put(w, tire);
       const hub = cyl(0.045, W0 + 0.03, 16);
       hub.rotateX(Math.PI / 2);
-      const add = (geo, m = faceMat) => {
-        wheel.add(new THREE.Mesh(geo, m));
-        wheel.add(new THREE.LineSegments(new THREE.EdgesGeometry(geo, 24), subMats[3]));
-      };
-      add(hub);
-      for (let i = 0; i < 14; i++) {
-        const a = (i / 14) * Math.PI * 2;
+      put(w, hub);
+      for (let i = 0; i < grousers; i++) {
         const g = box(0.026, 0.018, W0 + 0.004);
         g.translate(0, R0 + 0.006, 0);
-        g.rotateZ(a);
-        add(g);
+        g.rotateZ((i / grousers) * Math.PI * 2);
+        put(w, g);
       }
       for (let i = 0; i < 5; i++) {
         const g = box(0.012, 0.075, 0.008);
         g.translate(0, 0.08, s * (W0 / 2 + 0.004));
         g.rotateZ((i / 5) * Math.PI * 2);
-        add(g);
+        put(w, g);
       }
-      wheel.rotation.x = -Math.PI / 2; // undo the parent's axis turn
-      spinners.push(wheel);
     }
   }
 
@@ -160,6 +151,19 @@ export function createRover(canvas) {
   addPart(box(0.08, 0.04, 0.06), 5, dK, v(-0.38, 0.62, -0.17));
   addPart(cyl(0.005, 0.3, 6), 5, dK, v(-0.38, 0.79, -0.17));
   addPart(box(0.018, 0.018, 0.018), 5, dK, v(-0.38, 0.945, -0.17));
+
+  // merge each bucket → one mesh + one line set
+  for (const b of buckets.values()) {
+    const g = new THREE.Group();
+    if (b.pivot) g.position.copy(b.pivot);
+    const faces = mergeGeometries(b.faces), edges = mergeGeometries(b.edges);
+    b.faces.forEach((x) => x.dispose());
+    b.edges.forEach((x) => x.dispose());
+    g.add(new THREE.Mesh(faces, faceMat), new THREE.LineSegments(edges, subMats[b.sub]));
+    body.add(g);
+    parts.push({ g, base: g.position.clone(), dir: b.dir, sub: b.sub });
+    if (b.spin) spinners.push(g);
+  }
 
   /* Turntable — a measured ring the rover stands on */
   {
@@ -201,10 +205,13 @@ export function createRover(canvas) {
 
   /* ── Sizing ── */
   let W = 0, H = 0;
+  const touch = matchMedia('(pointer: coarse)').matches;
   function resize() {
+    // phones resize on every address-bar show/hide; only react to real changes
+    if (touch && W && innerWidth === W && Math.abs(innerHeight - H) < 160) return;
     W = innerWidth;
     H = innerHeight;
-    renderer.setPixelRatio(Math.min(devicePixelRatio, W < 700 ? 1.75 : 2));
+    renderer.setPixelRatio(Math.min(devicePixelRatio, W < 700 ? 1.5 : 2));
     renderer.setSize(W, H, false);
     camera.aspect = W / H;
     camera.updateProjectionMatrix();

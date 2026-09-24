@@ -1,0 +1,272 @@
+export const links = {
+  email: 'hbavaskar6@gmail.com',
+  github: 'https://github.com/HarshBavaskar',
+  linkedin: 'https://linkedin.com/in/harsh-bavaskar',
+};
+
+export const chapters = [
+  { id: 'top', n: '00', title: 'Index' },
+  { id: 'rover', n: '01', title: 'The Rover' },
+  { id: 'about', n: '02', title: 'About' },
+  { id: 'path', n: '03', title: 'Path' },
+  { id: 'work', n: '04', title: 'Work' },
+  { id: 'toolkit', n: '05', title: 'Toolkit' },
+  { id: 'record', n: '06', title: 'Record' },
+  { id: 'contact', n: '07', title: 'Contact' },
+];
+
+export const subsystems = [
+  { n: '01', name: 'Chassis', text: 'The structural spine. Every load path starts here.' },
+  { n: '02', name: 'Drivetrain', text: 'Motors and gearing, sized for torque at crawl speed.' },
+  { n: '03', name: 'Suspension', text: 'Articulation that keeps every wheel planted on broken ground.' },
+  { n: '04', name: 'Wheels', text: 'Traction on sand, gravel and the obstacle course.' },
+  { n: '05', name: 'Electronics', text: 'Power, motor drivers and sensors, mated to the structure.' },
+  { n: '06', name: 'Controls', text: 'The teleoperation stack and LiDAR navigation.' },
+];
+
+export const stats = [
+  { value: 18, suffix: '', label: 'Person build team led for NASA HERC' },
+  { value: 6, suffix: '', label: 'Person dev team led at House of Hiranandani' },
+  { value: 40, suffix: '+', label: 'Students mentored as Head of Robotics' },
+  { value: 900, suffix: '+', label: 'Tables unified into one Snowflake platform' },
+];
+
+export const path = [
+  {
+    period: 'Jul 2024',
+    org: 'Atlas Skilltech University',
+    role: 'BTech, Computer Science — AI & ML',
+    place: 'Mumbai',
+    points: ['Started a degree in AI and machine learning, and immediately went looking for something with wheels.'],
+    tags: ['Class of 2028'],
+  },
+  {
+    period: 'Sep 2024 — Apr 2025',
+    org: 'Team Mushak',
+    role: 'Rover Construction Lead',
+    place: 'NASA HERC · RC Division',
+    points: [
+      "Directed the 18-member build team behind India's first and only entry in NASA's HERC RC category, across six subsystems and a 12-month cycle.",
+      'Integrated the mechanical and electrical systems — structure to motor drivers, sensors and the teleoperation stack.',
+      'Cleared every mission task, from the mobility course to sample collection and LiDAR navigation.',
+    ],
+    tags: ['5th globally', '18 people', '6 subsystems'],
+  },
+  {
+    period: 'Oct 2025 — Jul 2026',
+    org: 'SPARC Society',
+    role: 'Head of Robotics Department',
+    place: 'Atlas Skilltech University',
+    points: [
+      "Founded the department's technical programme.",
+      'Ran university-level competitions and workshops, and mentored 40+ students through robotics and research projects.',
+    ],
+    tags: ['40+ students', 'Founding head'],
+  },
+  {
+    period: 'May 2026 — Present',
+    org: 'House of Hiranandani',
+    role: 'AI Intern · Lead Developer & Project Architect',
+    place: 'Mumbai',
+    points: [
+      'Sole developer of the IB Diploma student information system for Hiranandani Upscale School — nine role-based modules in Next.js and TypeScript, now in daily use.',
+      'Passwordless WhatsApp authentication with a four-role permission matrix, and an import pipeline that turns ManageBac gradebooks into live predictions.',
+      'Leads a 6-person team under the CTO on the MIS used by the C-suite — 900+ tables from six systems in one Snowflake medallion architecture, plus a workflow orchestration engine written from scratch.',
+    ],
+    tags: ['9 modules', '900+ tables', '6 systems'],
+  },
+];
+
+export const projects = [
+  {
+    id: 'desk',
+    name: 'Desk',
+    year: '2026',
+    fresh: true,
+    kind: 'Product · Web app',
+    line: "Every subject's Google Classroom, on one desk.",
+    text: 'Google Classroom gives every subject its own island. Desk joins them up: every deadline on one list, AI study notes written from the professor’s own lecture, exam countdowns with a revision timetable — and for faculty, a whole subject’s submissions at a glance.',
+    role: 'Co-built with Anisa D’souza',
+    stack: ['Installable PWA', 'Google Classroom API', 'Google Drive', 'AI study notes'],
+    metric: ['2', 'roles — students and faculty, one app'],
+    href: 'https://github.com/HarshBavaskar/Desk',
+    hint: 'Product screens',
+    screens: [
+      ['home', 'Home'], ['assignments', 'Tasks'], ['study-note', 'Notes'], ['exams', 'Exams'], ['faculty', 'Faculty'],
+    ].map(([f, label]) => ({ type: 'img', src: `work/desk/${f}.webp`, label })),
+    auto: 3400,
+  },
+  {
+    id: 'natlang',
+    name: 'NatLang',
+    year: '2026',
+    kind: 'Developer tool · VS Code',
+    line: 'Plain English in, idiomatic code out.',
+    text: 'A VS Code transpilation engine that treats pseudocode as a first-class language. Tokens stream straight into the editor, a Java agentic backend validates structure and complexity, and providers swap between local Ollama and the cloud.',
+    role: 'Systems architect',
+    stack: ['TypeScript', 'VS Code API', 'Java', 'Ollama', 'SSE streaming'],
+    metric: ['30+', 'target languages'],
+    href: 'https://github.com/HarshBavaskar/Natlang-Extension',
+  },
+  {
+    id: 'polaris',
+    name: 'Polaris',
+    year: '2026',
+    kind: 'AI · Early warning',
+    line: 'Seeing a cloudburst before it lands.',
+    text: 'A real-time, hyperlocal cloudburst early-warning and decision system. A CNN reads the sky, an LSTM models how it is escalating, citizen reports are fused in, and authorities keep the final override — alerts go out to phones the moment risk turns.',
+    role: 'Lead AI engineer',
+    stack: ['PyTorch CNN + LSTM', 'FastAPI', 'MongoDB', 'Flutter', 'Firebase alerts'],
+    metric: ['2 apps', 'authority dashboard and citizen app'],
+    href: 'https://github.com/HarshBavaskar/Polaris',
+    hint: 'Live model · dashboard · citizen app',
+    screens: [
+      { type: 'demo', id: 'polaris', label: 'Model' },
+      { type: 'video', label: 'Dashboard', src: 'work/polaris/dashboard.webm', poster: 'work/polaris/dashboard.webp' },
+      { type: 'video', label: 'Citizen', src: 'work/polaris/citizen.webm', poster: 'work/polaris/citizen.webp', phone: true },
+    ],
+    tone: 'dark',
+  },
+  {
+    id: 'airo',
+    name: 'AIRO Bot',
+    year: '2024',
+    kind: 'Robotics · Autonomy',
+    line: 'An autonomous home assistant robot.',
+    text: 'A mobile robot on an Arduino Nano and ESP32 stack — face recognition, voice control, ultrasonic obstacle avoidance and line following — with the control firmware and operator interface built alongside.',
+    role: 'Lead developer',
+    stack: ['ESP32', 'Arduino Nano', 'Embedded C++', 'Ultrasonic', 'Face recognition'],
+    metric: ['<10 cm', 'detection error in live navigation'],
+    hint: 'Move to drop obstacles',
+  },
+  {
+    id: 'ballot',
+    name: 'BlockBallot',
+    year: '2026',
+    kind: 'Security · Full stack',
+    line: 'Votes you can prove were never touched.',
+    text: 'A digital election platform on a custom in-memory blockchain. Proof-of-work mining, Merkle trees and a five-layer hash pipeline keep every ballot tamper-evident, served by Spring Boot.',
+    role: 'Full-stack engineer',
+    stack: ['Java', 'Spring Boot', 'Merkle trees', 'Proof of work', 'WebGL UI'],
+    metric: ['5-layer', 'hash pipeline'],
+    href: 'https://github.com/HarshBavaskar/BlockBallot',
+    hint: 'Click to cast a vote',
+  },
+  {
+    id: 'footfall',
+    name: 'Footfall Counter',
+    year: '2025',
+    kind: 'Computer vision',
+    line: 'Counting people, one ID at a time.',
+    text: 'YOLOv8 detects every person in frame, DeepSORT keeps their identity across frames, and a virtual line counts entries and exits — analytics for malls, offices and public spaces.',
+    role: 'Developer',
+    stack: ['YOLOv8', 'DeepSORT', 'OpenCV', 'Python'],
+    metric: ['Real-time', 'multi-object tracking'],
+    href: 'https://github.com/HarshBavaskar/AI-Based-Footfall-Counter',
+    hint: 'You are being tracked',
+  },
+  {
+    id: 'prism',
+    name: 'PRISMRx',
+    year: '2025',
+    kind: 'Healthcare AI',
+    line: 'Catching the interaction before the prescription.',
+    text: 'A clinical decision-support tool that predicts drug–drug interactions and side effects across a patient’s whole medication list, surfacing the risky pairs first.',
+    role: 'Lead developer',
+    stack: ['Machine learning', 'Python', 'Flask', 'React'],
+    metric: ['Polypharmacy', 'interaction analysis'],
+    href: 'https://github.com/HarshBavaskar/PrismRX-AI',
+    hint: 'Hover a medicine',
+  },
+];
+
+export const alsoBuilt = [
+  ['ALRA', 'A self-contained Raspberry Pi assistant — camera, microphone and battery running live OpenCV vision.'],
+];
+
+export const toolkit = [
+  {
+    cat: 'Robotics',
+    keys: [
+      ['Integration', 'Mechanical and electrical integration — Team Mushak rover.'],
+      ['Drivetrain', 'Drivetrain assembly — NASA HERC rover.'],
+      ['Suspension', 'Suspension assembly — NASA HERC rover.'],
+      ['Teleop', 'Teleoperation stack — NASA HERC rover.'],
+      ['Avoidance', 'Obstacle avoidance — AIRO Bot.'],
+      ['Line follow', 'Line following — AIRO Bot.'],
+      ['LiDAR', 'LiDAR navigation — HERC mission task.'],
+      ['Sensor fusion', 'Sensor fusion for navigation.'],
+      ['Motor control', 'Motor control and drivers.'],
+      ['Field test', 'Robot bring-up and field testing.'],
+    ],
+  },
+  {
+    cat: 'CAD',
+    keys: [
+      ['Fusion 360', 'Parametric CAD.'],
+      ['SolidWorks', 'Assemblies and mechanical design.'],
+      ['RhinoCAD', 'Surface modelling.'],
+      ['DFM', 'Design for manufacture.'],
+      ['FDM', 'FDM 3D printing.'],
+      ['SLA', 'SLA resin printing.'],
+      ['Fabrication', 'Shop fabrication, from stock to structure.'],
+    ],
+  },
+  {
+    cat: 'Embedded',
+    keys: [
+      ['Arduino', 'AIRO Bot, rover subsystems.'],
+      ['ESP32', 'AIRO Bot control stack.'],
+      ['Raspberry Pi', 'ALRA vision assistant.'],
+      ['C / C++', 'Embedded firmware.'],
+      ['UART', 'Serial links between boards.'],
+      ['I2C', 'Sensor buses.'],
+      ['SPI', 'High-speed peripherals.'],
+      ['Power', 'Power and battery subsystems.'],
+    ],
+  },
+  {
+    cat: 'Vision · ML',
+    keys: [
+      ['OpenCV', 'ALRA, Footfall Counter.'],
+      ['YOLOv8', 'Footfall Counter detection. YOLO v5 to v8.'],
+      ['DeepSORT', 'Footfall Counter tracking.'],
+      ['MobileNetV2', 'Polaris sky classification.'],
+      ['LSTM', 'Polaris temporal modelling.'],
+      ['Face rec.', 'AIRO Bot.'],
+      ['Inference', 'Real-time inference and model retraining.'],
+    ],
+  },
+  {
+    cat: 'Software',
+    keys: [
+      ['Python', 'Polaris, Footfall, PRISMRx.'],
+      ['TypeScript', 'NatLang, Hiranandani SIS.'],
+      ['Next.js', 'Hiranandani SIS — nine modules.'],
+      ['React', 'Interfaces, this site included.'],
+      ['Java', 'NatLang backend, BlockBallot.'],
+      ['Spring Boot', 'BlockBallot.'],
+      ['Flutter', 'Polaris mobile alerts.'],
+      ['Flask', 'PRISMRx.'],
+      ['Django', 'Web backends.'],
+    ],
+  },
+  {
+    cat: 'Data · Cloud',
+    keys: [
+      ['Snowflake', '900+ tables, medallion architecture.'],
+      ['PostgreSQL', 'Relational data.'],
+      ['MongoDB', 'Document data.'],
+      ['Redis', 'Caching and queues.'],
+      ['Azure', 'Cloud deployments.'],
+      ['Git', 'Everything.'],
+    ],
+  },
+];
+
+export const record = [
+  { k: 'Award', v: '5th global rank', d: 'RC Division, NASA Human Exploration Rover Challenge', y: '2025' },
+  { k: 'Award', v: 'Social Media Award', d: 'University Division, NASA HERC', y: '2025' },
+  { k: 'Education', v: 'BTech, Computer Science — AI & ML', d: 'Atlas Skilltech University, Mumbai', y: '2024 — 28' },
+  { k: 'Languages', v: 'English, Hindi, Marathi, German', d: 'Professional · Native · Native · Elementary', y: '—' },
+];

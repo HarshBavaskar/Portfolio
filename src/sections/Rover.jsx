@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef } from 'react';
-import { gsap, isDesktop } from '../lib/motion';
+import { gsap, ScrollTrigger, isDesktop, touch, bus } from '../lib/motion';
 import { roverState } from '../gl/state';
 import { subsystems } from '../data';
 
@@ -14,19 +14,12 @@ export default function Rover() {
       gsap.set([...labels, ...paths, ...dots], { autoAlpha: 0 });
 
       const tl = gsap.timeline({
+        paused: true,
         defaults: { ease: 'none' },
-        scrollTrigger: {
-          trigger: root.current,
-          start: 'top top',
-          end: () => `+=${innerHeight * (isDesktop() ? 5.5 : 4.5)}`,
-          pin: true,
-          scrub: 0.6,
-          invalidateOnRefresh: true,
-          onUpdate: (self) => {
-            // which subsystem is being described
-            const t = self.progress * tl.duration();
-            roverState.focus = t > 3.4 && t < 7 ? Math.min(5, Math.floor((t - 3.4) / 0.55)) : -1;
-          },
+        // which subsystem is being described
+        onUpdate: () => {
+          const t = tl.time();
+          roverState.focus = t > 3.4 && t < 7 ? Math.min(5, Math.floor((t - 3.4) / 0.55)) : -1;
         },
       });
 
@@ -58,14 +51,122 @@ export default function Rover() {
         .from('.rv__rank-copy > *', { y: 30, autoAlpha: 0, stagger: 0.1, duration: 0.6, ease: 'power3.out' }, 9.4)
         .to({}, { duration: 0.6 });
 
-      // callout geometry follows the projected anchors every frame
+      // labelled stops: the claim, each subsystem, the result
+      const STEPS = ['claim', ...subsystems.map((_, i) => `sub${i}`), 'end'];
+      tl.addLabel('claim', 2.2);
+      subsystems.forEach((_, i) => tl.addLabel(`sub${i}`, 3.8 + i * 0.55));
+      tl.addLabel('end', tl.duration());
+
+      let stopSteps = () => {};
+      if (!touch) {
+        // mouse and trackpad: the whole sequence is scrubbed by scroll
+        ScrollTrigger.create({
+          trigger: root.current,
+          start: 'top top',
+          end: () => `+=${innerHeight * 5.5}`,
+          pin: true,
+          scrub: 0.6,
+          animation: tl,
+          invalidateOnRefresh: true,
+        });
+      } else {
+        // phones: the chapter holds still and each swipe moves exactly one step,
+        // so a fast flick can't skip past the parts
+        root.current.classList.add('is-steps');
+        const counter = root.current.querySelector('.rv__step');
+        let index = -1, animating = false, skipUntil = 0, st;
+        const show = (i) => {
+          counter.textContent = `${String(i + 1).padStart(2, '0')} / ${String(STEPS.length).padStart(2, '0')}${i === 0 ? ' · Swipe' : ''}`;
+        };
+
+        // one gesture moves one step: a touch counts once until the finger lifts,
+        // a wheel burst once per pause
+        let used = false, lastStep = 0;
+        const step = (self, dir) => {
+          const now = performance.now();
+          if (animating || now - lastStep < 300) return;
+          if (self.event?.type === 'wheel' ? now - lastStep < 900 : used) return;
+          used = true;
+          lastStep = now;
+          go(index + dir, dir > 0);
+        };
+        const intent = ScrollTrigger.observe({
+          type: 'touch,wheel',
+          wheelSpeed: -1,
+          tolerance: 12,
+          preventDefault: true,
+          onPress: () => { used = false; },
+          onUp: (self) => step(self, 1),
+          onDown: (self) => step(self, -1),
+        });
+        const hold = ScrollTrigger.observe({
+          type: 'wheel,scroll',
+          preventDefault: true,
+          allowClicks: true,
+          onEnable: (self) => { self.savedScroll = self.scrollY(); },
+          onChangeY: (self) => self.scrollY(self.savedScroll),
+        });
+        intent.disable();
+        hold.disable();
+
+        const release = (down) => {
+          intent.disable();
+          hold.disable();
+          animating = false;
+          hold.scrollY(down ? st.end + 1 : st.start - 1);
+        };
+        function go(i, down) {
+          if (i >= STEPS.length || i < 0) return release(down);
+          animating = true;
+          index = i;
+          show(i);
+          const d = gsap.utils.clamp(0.7, 2.2, Math.abs(tl.labels[STEPS[i]] - tl.time()) * 0.5);
+          tl.tweenTo(STEPS[i], { duration: d, ease: 'power2.inOut', onComplete: () => { animating = false; } });
+        }
+        const engage = (self, i, down) => {
+          if (hold.isEnabled || performance.now() < skipUntil) return;
+          self.scroll(self.start);
+          hold.enable();
+          intent.enable();
+          go(i, down);
+        };
+        st = ScrollTrigger.create({
+          trigger: root.current,
+          start: 'top top',
+          end: '+=240',
+          pin: true,
+          anticipatePin: 1,
+          onEnter: (self) => engage(self, index + 1, true),
+          onEnterBack: (self) => engage(self, index - 1, false),
+        });
+
+        // menu jumps pass straight through, leaving the sequence where it belongs
+        const off = bus.on('navigate', (y) => {
+          skipUntil = performance.now() + 2000;
+          intent.disable();
+          hold.disable();
+          animating = false;
+          tl.pause();
+          if (y > st.start) { tl.progress(1); index = STEPS.length - 1; } else { tl.progress(0); index = -1; }
+        });
+        show(0);
+        stopSteps = () => { off(); intent.kill(); hold.kill(); };
+      }
+
+      // callout geometry follows the projected anchors — only when they move
       const svg = root.current.querySelector('.leaders');
+      const last = new Float32Array(15);
       const place = () => {
         if (roverState.opacity < 0.01 || (roverState.focus === -1 && roverState.explode < 0.05)) return;
         const desk = isDesktop();
         const W = innerWidth, H = innerHeight;
-        svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
         const A = roverState.anchors;
+        let moved = false;
+        const sig = [W, H, roverState.focus];
+        A.forEach((a) => sig.push(a.x, a.y));
+        sig.forEach((v, k) => { if (Math.abs(v - last[k]) > 0.25) { moved = true; last[k] = v; } });
+        if (!moved) return;
+        svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
         const m = Math.min(36, Math.max(16, W * 0.024)); // mirrors --m
         // three slots per side; anchors sorted left→right, then top→bottom within a side
         const order = [0, 1, 2, 3, 4, 5].sort((a, b) => A[a].x - A[b].x);
@@ -97,7 +198,7 @@ export default function Rover() {
         });
       };
       gsap.ticker.add(place);
-      return () => gsap.ticker.remove(place);
+      return () => { gsap.ticker.remove(place); stopSteps(); };
     }, root);
     return () => ctx.revert();
   }, []);
@@ -107,6 +208,7 @@ export default function Rover() {
       <div className="rv__head wrap mono">
         <span>01 — The Rover</span>
         <span className="dim">NASA Human Exploration Rover Challenge · RC Division · 2025</span>
+        <span className="rv__step" aria-hidden="true" />
       </div>
 
       <div className="rv__claim wrap">

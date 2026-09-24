@@ -297,6 +297,8 @@ main { position: relative; z-index: 2; }
 /* ── 01 Rover ──────────────────────────────────────────── */
 .rv { position: relative; height: 100vh; overflow: hidden; }
 .rv__head { position: absolute; top: calc(var(--nav-h) + 18px); left: 0; right: 0; display: flex; justify-content: space-between; gap: 16px; }
+.rv__step { display: none; }
+.rv.is-steps .rv__step { display: inline; color: var(--signal); }
 .rv__claim {
   position: absolute;
   left: 0;

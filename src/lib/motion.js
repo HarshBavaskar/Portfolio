@@ -15,12 +15,15 @@ export const reduced =
 export const finePointer =
   typeof window !== 'undefined' && window.matchMedia('(hover: hover) and (pointer: fine)').matches;
 export const isDesktop = () => window.matchMedia('(min-width: 900px)').matches;
+export const touch =
+  typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches;
 
 /* ── Smooth scroll ─────────────────────────────────────── */
 export let lenis = null;
 
 export function initScroll() {
-  if (reduced) return () => {};
+  // Lenis only smooths wheels; phones keep their own native scrolling
+  if (reduced || touch) return () => {};
   lenis = new Lenis({ lerp: 0.085, wheelMultiplier: 0.95, touchMultiplier: 1.4 });
   lenis.on('scroll', ScrollTrigger.update);
   const raf = (t) => lenis.raf(t * 1000);
@@ -34,8 +37,12 @@ export function initScroll() {
 }
 
 export function scrollTo(target) {
-  if (lenis) lenis.scrollTo(target, { duration: 1.6, easing: (t) => 1 - Math.pow(1 - t, 4) });
-  else document.querySelector(target)?.scrollIntoView();
+  const el = document.querySelector(target);
+  if (!el) return;
+  const y = el.getBoundingClientRect().top + window.scrollY;
+  bus.emit('navigate', y);
+  if (lenis) lenis.scrollTo(y, { duration: 1.6, easing: (t) => 1 - Math.pow(1 - t, 4) });
+  else window.scrollTo({ top: y, behavior: reduced ? 'auto' : 'smooth' });
 }
 
 export const lockScroll = (on) => {
@@ -62,8 +69,16 @@ function applyTheme() {
     }
   }
 }
+// Every step restyles the whole page, so phones take a few quick steps
+// instead of a long per-frame fade.
 export function setTheme(dark) {
-  gsap.to(theme, { t: dark ? 1 : 0, duration: 0.9, ease: 'power2.inOut', overwrite: true, onUpdate: applyTheme });
+  gsap.to(theme, {
+    t: dark ? 1 : 0,
+    duration: touch ? 0.4 : 0.9,
+    ease: touch ? 'steps(4)' : 'power2.inOut',
+    overwrite: true,
+    onUpdate: applyTheme,
+  });
 }
 
 /* ── Tiny event bus (chapter changes etc.) ─────────────── */

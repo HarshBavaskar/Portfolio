@@ -225,10 +225,13 @@ export function createRover(canvas) {
   const ndc = new THREE.Vector3();
   let last = performance.now();
 
+  // the last frame's inputs — when nothing moved, the GPU gets the frame off
+  const seen = new Float32Array(20);
+  let shownAlpha = -1;
   function frame() {
     const s = roverState;
     const alpha = s.opacity * s.intro;
-    canvas.style.opacity = alpha;
+    if (Math.abs(alpha - shownAlpha) > 0.001) { canvas.style.opacity = alpha; shownAlpha = alpha; }
     if (alpha < 0.01) return;
     const now = performance.now();
     const dt = Math.min(0.05, (now - last) / 1000);
@@ -276,6 +279,11 @@ export function createRover(canvas) {
     camera.position.set(Math.sin(az) * Math.cos(el) * D, Math.sin(el) * D + target.y, Math.cos(az) * Math.cos(el) * D);
     camera.lookAt(target);
     camera.setViewOffset(W, H, -(s.cx - 0.5) * W, -(s.cy - 0.5) * H, W, H);
+
+    let changed = false;
+    const sig = [W, H, s.cx, s.cy, s.dist, s.explode, s.drive, root.rotation.y, pointer.sx, pointer.sy, theme.t, alpha, ...glow];
+    for (let k = 0; k < sig.length; k++) if (Math.abs(sig[k] - seen[k]) > 1e-4) { changed = true; seen[k] = sig[k]; }
+    if (!changed) return;
 
     renderer.render(scene, camera);
 

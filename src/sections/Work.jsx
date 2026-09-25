@@ -65,7 +65,7 @@ export default function Work() {
   }, []);
 
   return (
-    <section id="work" className="wk" ref={root} data-chapter data-theme="light">
+    <section id="work" className="wk" ref={root} data-chapter data-theme="ash">
       <div className="wk__head wrap">
         <div className="sec-head mono"><span>04 / Work</span><span className="dim">Selected, 2024 to 2026</span></div>
         <h2 className="wk__title" data-reveal="lines">Things I’ve built that you can actually poke at.</h2>

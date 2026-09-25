@@ -32,7 +32,7 @@ export default function Contact() {
   }, []);
 
   return (
-    <section id="contact" className="ct" ref={root} data-chapter data-theme="dark">
+    <section id="contact" className="ct" ref={root} data-chapter data-theme="charcoal">
       <div className="ct__sheet">
         <div className="wrap">
           <div className="sec-head mono"><span>07 / Contact</span><span className="dim">Open to internships, research and builds</span></div>

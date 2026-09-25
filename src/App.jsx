@@ -31,6 +31,7 @@ export default function App() {
   useEffect(() => {
     if (!ready) return;
     lockScroll(false);
+    bus.emit('ready');
     const ctx = gsap.context(() => {
       document.querySelectorAll('[data-chapter]').forEach((el, i) => {
         // pinned chapters are measured by their spacer, which spans the whole pin

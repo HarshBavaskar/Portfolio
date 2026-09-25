@@ -4,6 +4,7 @@ import { toggleSound, click } from '../lib/sound';
 import { chapters, early } from '../data';
 import { wipeTo } from '../early/wipe';
 import Clock from './Clock';
+import Logo from './Logo';
 
 export default function Nav() {
   const title = useRef(null);
@@ -37,9 +38,8 @@ export default function Nav() {
 
   return (
     <header className="nav">
-      <a className="nav__brand" href="#top" onClick={go('top')}>
-        <i className="nav__mark" aria-hidden="true" />
-        Harsh Bavaskar
+      <a className="nav__brand" href="#top" onClick={go('top')} aria-label="Harsh Bavaskar — back to top">
+        <Logo />
       </a>
       <div className="nav__chapter mono" aria-live="polite">
         <span ref={num}>00</span>

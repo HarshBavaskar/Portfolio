@@ -70,87 +70,44 @@ export default function Rover() {
           invalidateOnRefresh: true,
         });
       } else {
-        // phones: the chapter holds still and each swipe moves exactly one step,
-        // so a fast flick can't skip past the parts
+        // phones: native scrolling through a tall section with a CSS-sticky
+        // stage — nothing fights the finger. Scroll position picks the step;
+        // each step then plays at its own pace, one screen of scroll apiece.
         root.current.classList.add('is-steps');
         const counter = root.current.querySelector('.rv__step');
-        let index = -1, animating = false, skipUntil = 0, st;
+        let index = -1, tween = null, skipUntil = 0;
         const show = (i) => {
-          counter.textContent = `${String(i + 1).padStart(2, '0')} / ${String(STEPS.length).padStart(2, '0')}${i === 0 ? ' · Swipe' : ''}`;
+          counter.textContent = `${String(i + 1).padStart(2, '0')} / ${String(STEPS.length).padStart(2, '0')}${i === 0 ? ' · Scroll' : ''}`;
         };
-
-        // one gesture moves one step: a touch counts once until the finger lifts,
-        // a wheel burst once per pause
-        let used = false, lastStep = 0;
-        const step = (self, dir) => {
-          const now = performance.now();
-          if (animating || now - lastStep < 300) return;
-          if (self.event?.type === 'wheel' ? now - lastStep < 900 : used) return;
-          used = true;
-          lastStep = now;
-          go(index + dir, dir > 0);
-        };
-        const intent = ScrollTrigger.observe({
-          type: 'touch,wheel',
-          wheelSpeed: -1,
-          tolerance: 12,
-          preventDefault: true,
-          onPress: () => { used = false; },
-          onUp: (self) => step(self, 1),
-          onDown: (self) => step(self, -1),
-        });
-        const hold = ScrollTrigger.observe({
-          type: 'wheel,scroll',
-          preventDefault: true,
-          allowClicks: true,
-          onEnable: (self) => { self.savedScroll = self.scrollY(); },
-          onChangeY: (self) => self.scrollY(self.savedScroll),
-        });
-        intent.disable();
-        hold.disable();
-
-        const release = (down) => {
-          intent.disable();
-          hold.disable();
-          animating = false;
-          hold.scrollY(down ? st.end + 1 : st.start - 1);
-        };
-        function go(i, down) {
-          if (i >= STEPS.length || i < 0) return release(down);
-          animating = true;
+        const go = (i) => {
+          if (i === index) return;
+          const to = i < 0 ? 0 : tl.labels[STEPS[i]];
           index = i;
-          show(i);
-          const d = gsap.utils.clamp(0.7, 2.2, Math.abs(tl.labels[STEPS[i]] - tl.time()) * 0.5);
-          tl.tweenTo(STEPS[i], { duration: d, ease: 'power2.inOut', onComplete: () => { animating = false; } });
-        }
-        const engage = (self, i, down) => {
-          if (hold.isEnabled || performance.now() < skipUntil) return;
-          self.scroll(self.start);
-          hold.enable();
-          intent.enable();
-          go(i, down);
+          if (i >= 0) show(i);
+          tween?.kill();
+          tween = tl.tweenTo(to, { duration: gsap.utils.clamp(0.6, 1.8, Math.abs(to - tl.time()) * 0.5), ease: 'power2.inOut' });
         };
-        st = ScrollTrigger.create({
+        ScrollTrigger.create({
           trigger: root.current,
           start: 'top top',
-          end: '+=240',
-          pin: true,
-          anticipatePin: 1,
-          onEnter: (self) => engage(self, index + 1, true),
-          onEnterBack: (self) => engage(self, index - 1, false),
+          end: 'bottom bottom',
+          onUpdate: (self) => {
+            if (performance.now() < skipUntil) return;
+            go(Math.min(STEPS.length - 1, Math.floor(self.progress * STEPS.length)));
+          },
+          onEnter: () => go(0),
+          onLeaveBack: () => go(-1),
         });
-
-        // menu jumps pass straight through, leaving the sequence where it belongs
+        // menu jumps skip straight to where the sequence should be
         const off = bus.on('navigate', (y) => {
-          skipUntil = performance.now() + 2000;
-          intent.disable();
-          hold.disable();
-          animating = false;
-          tl.pause();
-          if (y > st.start) { tl.progress(1); index = STEPS.length - 1; } else { tl.progress(0); index = -1; }
+          skipUntil = performance.now() + 1500;
+          tween?.kill();
+          const past = y > root.current.getBoundingClientRect().top + scrollY;
+          tl.progress(past ? 1 : 0);
+          index = past ? STEPS.length - 1 : -1;
         });
         show(0);
-        stopSteps = () => { off(); intent.kill(); hold.kill(); };
+        stopSteps = () => { off(); tween?.kill(); };
       }
 
       // callout geometry follows the projected anchors — only when they move
@@ -205,6 +162,7 @@ export default function Rover() {
 
   return (
     <section id="rover" className="rv" ref={root} data-chapter data-theme="dark">
+      <div className="rv__stage">
       <div className="rv__head wrap mono">
         <span>01 — The Rover</span>
         <span className="dim">NASA Human Exploration Rover Challenge · RC Division · 2025</span>
@@ -249,6 +207,7 @@ export default function Rover() {
           <p className="mono">Final standing</p>
           <p>In the world, against 100+ international teams. The rover cleared every mission task — the mobility course, sample collection and LiDAR navigation.</p>
         </div>
+      </div>
       </div>
     </section>
   );

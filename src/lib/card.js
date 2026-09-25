@@ -14,6 +14,7 @@ export const CARD = {
   serial: 'HB — 26 · No. 0001',
   rows: [
     ['Email', links.email],
+    ...(links.phone ? [['Phone', links.phone]] : []),
     ['Web', 'harshbavaskar.github.io/Portfolio'],
     ['GitHub', 'github.com/HarshBavaskar'],
     ['LinkedIn', 'linkedin.com/in/harsh-bavaskar'],
@@ -80,6 +81,7 @@ export function buildVCard() {
     `TITLE:${esc('Robotics, Embedded Systems & Computer Vision')}`,
     'ORG:Atlas Skilltech University',
     `EMAIL;TYPE=INTERNET,PREF:${links.email}`,
+    ...(links.phone ? [`TEL;TYPE=CELL:${links.phone.replace(/[^\d+]/g, '')}`] : []),
     `URL:${SITE}`,
     `item1.URL:${links.github}`,
     'item1.X-ABLabel:GitHub',

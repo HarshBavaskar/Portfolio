@@ -2,6 +2,8 @@ export const links = {
   email: 'hbavaskar6@gmail.com',
   github: 'https://github.com/HarshBavaskar',
   linkedin: 'https://linkedin.com/in/harsh-bavaskar',
+  // shown on the contact card and in its vCard when set, e.g. '+91 98765 43210'
+  phone: '',
 };
 
 export const early = [

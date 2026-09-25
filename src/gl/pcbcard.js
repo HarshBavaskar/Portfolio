@@ -1,28 +1,48 @@
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
+import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { CARD, qrMatrix } from '../lib/card';
 
 /*
-  The contact card as a real circuit board: black solder mask with a clear
-  coat over faint copper, gold (ENIG) pads and edge fingers, a fibreglass
-  edge, and parts on top. The H of the silkscreen logo is crossed by a real
-  orange LED. Lit by a studio environment so the gloss and the gold read.
+  The contact card as a real circuit board, 1 unit ≈ 25 mm. Black solder
+  mask with an orange-peel clear coat over copper you can feel, gold (ENIG)
+  pads and edge fingers, plated holes drilled right through, a routed
+  fibreglass edge, and soldered parts that cast shadows. The H of the
+  silkscreen logo is crossed by a real orange LED.
 */
 
-const W0 = 3.4, H0 = 2.14, T = 0.06, R = 0.13; // a bank card, 1.6 mm thick
+const coarse = matchMedia('(pointer: coarse)').matches;
+const W0 = 3.4, H0 = 2.14, T = 0.064, R = 0.13; // a bank card, 1.6 mm thick
+const BEV = 0.005; // the routed edge is eased, not knife-sharp
 const TAB = { w: 0.46, h: 0.62, r: 0.05 }; // USB-style edge tab
 const minX = -W0 / 2, maxX = W0 / 2 + TAB.w, minY = -H0 / 2, maxY = H0 / 2;
 const SPANX = maxX - minX, SPANY = maxY - minY;
-const PX = 560; // texture pixels per unit
+const PX = coarse ? 420 : 600; // texture pixels per unit
 
 const GOLD = '#b8862f', MASK = '#0b0c0d', COPPER = '#191d1f', SILK = '#ecebe6';
 const LOGO = { x: -1.45, y: 0.8, s: 0.34 / 28 }; // HB glyph origin + scale
 const font = (w, px, mono) => `${w} ${px}px ${mono ? '"Geist Mono", ui-monospace, monospace' : 'Geist, "Helvetica Neue", Arial, sans-serif'}`;
 
-function outline(mirror) {
+// where the parts sit, shared by the artwork and the 3D parts
+const CHIP = { x: 0.62, y: 0.22, s: 0.44 };
+const PASSIVES = [[0.2, -0.05, 'cap'], [0.36, -0.05, 'cap'], [1.0, 0.62, 'res'], [1.0, 0.5, 'res']];
+const XTAL = { x: 0.1, y: 0.62 };
+const BTN = { x: 1.42, y: 0.4 };
+const LED = { x: 1.38, y: 0.62 };
+const HOLES = Array.from({ length: 6 }, (_, k) => [0.12 + k * 0.2, -0.8]);
+const DRILL = 0.028;
+const FINGERS = [-0.2, -0.067, 0.067, 0.2];
+const CORNERS = [[-1, -1], [-1, 1], [1, -1], [1, 1]];
+const pin = (side, k) => {
+  const off = -0.1575 + k * 0.045, e = CHIP.s / 2 + 0.03;
+  return [[CHIP.x + e, CHIP.y + off], [CHIP.x - e, CHIP.y + off], [CHIP.x + off, CHIP.y + e], [CHIP.x + off, CHIP.y - e]][side];
+};
+
+function outline(mirror, d = 0) {
   const m = (x) => (mirror ? -x : x);
-  const x0 = -W0 / 2, x1 = W0 / 2, y0 = -H0 / 2, y1 = H0 / 2, r = R;
-  const ty0 = -TAB.h / 2, ty1 = TAB.h / 2, tx1 = x1 + TAB.w, tr = TAB.r;
+  const x0 = -W0 / 2 + d, x1 = W0 / 2 - d, y0 = -H0 / 2 + d, y1 = H0 / 2 - d, r = R - d;
+  const ty0 = -TAB.h / 2 + d, ty1 = TAB.h / 2 - d, tx1 = W0 / 2 + TAB.w - d, tr = TAB.r - d;
   const s = new THREE.Shape();
   s.moveTo(m(x0 + r), y0);
   s.lineTo(m(x1 - r), y0);
@@ -42,7 +62,11 @@ function outline(mirror) {
   return s;
 }
 
-/* ── Textures: colour + an ORM-style map (R clearcoat, G roughness, B metal) ── */
+let seed = 11;
+const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+
+/* ── Artwork: colour, an ORM-style map (R clearcoat, G roughness, B metal)
+      and a height map, painted together layer by layer ── */
 function surface() {
   const make = () => {
     const c = document.createElement('canvas');
@@ -50,116 +74,147 @@ function surface() {
     c.height = Math.round(SPANY * PX);
     return c;
   };
-  const col = make(), orm = make();
-  const a = col.getContext('2d'), b = orm.getContext('2d');
-  a.fillStyle = MASK;
-  a.fillRect(0, 0, col.width, col.height);
-  b.fillStyle = 'rgb(255,120,0)'; // mask: satin under a clear coat
-  b.fillRect(0, 0, orm.width, orm.height);
-  // faint speckle in the mask
-  let seed = 11;
-  const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
-  for (let i = 0; i < 9000; i++) {
-    a.fillStyle = `rgba(255,255,255,${rnd() * 0.025})`;
-    a.fillRect(rnd() * col.width, rnd() * col.height, 1.5, 1.5);
+  const col = make(), orm = make(), bump = make();
+  const P = { col, orm, bump, a: col.getContext('2d'), b: orm.getContext('2d'), h: bump.getContext('2d') };
+  P.a.fillStyle = MASK;
+  P.a.fillRect(0, 0, col.width, col.height);
+  P.b.fillStyle = 'rgb(255,120,0)'; // mask: satin under a clear coat
+  P.b.fillRect(0, 0, orm.width, orm.height);
+  P.h.fillStyle = 'rgb(110,110,110)';
+  P.h.fillRect(0, 0, bump.width, bump.height);
+  // pigment in the mask, and the glass weave faintly printing through it
+  for (let i = 0; i < 14000; i++) {
+    P.a.fillStyle = `rgba(255,255,255,${rnd() * 0.022})`;
+    P.a.fillRect(rnd() * col.width, rnd() * col.height, 1.5, 1.5);
   }
-  return { col, orm, a, b };
+  P.h.globalAlpha = 0.022;
+  P.h.fillStyle = '#fff';
+  for (let x = 0; x < bump.width; x += PX * 0.02) P.h.fillRect(x, 0, PX * 0.008, bump.height);
+  for (let y = 0; y < bump.height; y += PX * 0.02) P.h.fillRect(0, y, bump.width, PX * 0.008);
+  P.h.globalAlpha = 1;
+  return P;
 }
 
 // board units → canvas pixels, for a face drawn as the viewer sees it
 const toPx = (vxMin) => ({ X: (x) => (x - vxMin) * PX, Y: (y) => (maxY - y) * PX, L: (u) => u * PX });
 
-function gold(a, b, draw) {
-  a.fillStyle = GOLD;
-  a.strokeStyle = GOLD;
-  draw(a);
-  b.fillStyle = 'rgb(0,105,255)';
-  b.strokeStyle = 'rgb(0,105,255)';
-  draw(b);
+function layer(c, style, draw) {
+  c.save();
+  c.fillStyle = style;
+  c.strokeStyle = style;
+  c.lineCap = 'round';
+  c.lineJoin = 'round';
+  draw(c);
+  c.restore();
 }
-function silk(a, b, draw) {
-  a.fillStyle = SILK;
-  a.strokeStyle = SILK;
-  draw(a);
-  b.fillStyle = 'rgb(40,170,0)';
-  b.strokeStyle = 'rgb(40,170,0)';
-  draw(b);
+// mask openings: gold sits a little below the mask around it
+const gold = (P, draw) => { layer(P.a, GOLD, draw); layer(P.b, 'rgb(0,105,255)', draw); layer(P.h, 'rgb(80,80,80)', draw); };
+// ink sits on top of the mask: matte, no clear coat, raised
+const silk = (P, draw) => { layer(P.a, SILK, draw); layer(P.b, 'rgb(30,175,0)', draw); layer(P.h, 'rgb(170,170,170)', draw); };
+// copper under the mask: barely a colour, but its edges catch the light
+const copper = (P, draw) => { layer(P.a, COPPER, draw); layer(P.h, 'rgb(150,150,150)', draw); };
+
+function ring(P, x, y, r, drill) {
+  gold(P, (c) => { c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fill(); });
+  if (!drill) {
+    layer(P.a, '#050505', (c) => { c.beginPath(); c.arc(x, y, r * 0.45, 0, Math.PI * 2); c.fill(); });
+    return;
+  }
+  // drilled clean through: the colour map goes transparent there
+  P.a.save();
+  P.a.globalCompositeOperation = 'destination-out';
+  P.a.fillStyle = '#000';
+  P.a.beginPath(); P.a.arc(x, y, drill, 0, Math.PI * 2); P.a.fill();
+  P.a.restore();
 }
-function copper(a, draw) {
-  a.save();
-  a.strokeStyle = COPPER;
-  a.fillStyle = COPPER;
-  a.lineCap = 'round';
-  a.lineJoin = 'round';
-  draw(a);
-  a.restore();
-}
-function hole(a, b, x, y, r) {
-  gold(a, b, (c) => { c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fill(); });
-  a.fillStyle = '#030303';
-  a.beginPath(); a.arc(x, y, r * 0.52, 0, Math.PI * 2); a.fill();
-  b.fillStyle = 'rgb(0,230,0)';
-  b.beginPath(); b.arc(x, y, r * 0.52, 0, Math.PI * 2); b.fill();
+// a via under the mask: just a tented bump
+const tented = (P, x, y, r) => layer(P.h, 'rgb(160,160,160)', (c) => { c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fill(); });
+
+// soft contact shadow baked under a part (shadow trick, so no ctx.filter)
+function ao(P, x, y, w, h, blur, alpha = 0.85) {
+  const c = P.a, off = 20000;
+  c.save();
+  c.shadowColor = `rgba(0,0,0,${alpha})`;
+  c.shadowBlur = blur;
+  c.shadowOffsetX = off;
+  c.fillStyle = '#000';
+  c.fillRect(x - w / 2 - off, y - h / 2, w, h);
+  c.restore();
 }
 
 function frontFace() {
-  const { col, orm, a, b } = surface();
+  const P = surface();
   const { X, Y, L } = toPx(minX);
-  const chip = { x: 0.62, y: 0.22, s: 0.44 };
-  const pin = (side, k) => {
-    const off = -0.1575 + k * 0.045;
-    const e = chip.s / 2 + 0.03;
-    return [[chip.x + e, chip.y + off], [chip.x - e, chip.y + off], [chip.x + off, chip.y + e], [chip.x + off, chip.y - e]][side];
-  };
-  const holes = Array.from({ length: 6 }, (_, k) => [0.12 + k * 0.2, -0.8]);
-  const fingers = [-0.2, -0.067, 0.067, 0.2];
+  const path = (c, pts) => { c.beginPath(); pts.forEach(([x, y], i) => (i ? c.lineTo(X(x), Y(y)) : c.moveTo(X(x), Y(y)))); c.stroke(); };
 
-  // copper under the mask: routed traces with 45° bends
-  copper(a, (c) => {
+  // routed copper, 45° bends, every trace going somewhere
+  copper(P, (c) => {
     c.lineWidth = L(0.02);
-    const path = (pts) => { c.beginPath(); pts.forEach(([x, y], i) => (i ? c.lineTo(X(x), Y(y)) : c.moveTo(X(x), Y(y)))); c.stroke(); };
-    fingers.forEach((fy, k) => {
+    FINGERS.forEach((fy, k) => {
       const [px, py] = pin(0, 2 + k);
-      path([[px, py], [1.12, py], [1.12 + Math.abs(fy - py), fy], [1.78, fy]]);
+      path(c, [[px, py], [1.12, py], [1.12 + Math.abs(fy - py), fy], [1.78, fy]]);
     });
-    holes.forEach(([hx, hy], k) => {
+    HOLES.forEach(([hx, hy], k) => {
       const [px, py] = pin(3, 1 + k);
-      path([[px, py], [px, -0.3], [hx, -0.3 - Math.abs(hx - px)], [hx, hy]]);
+      path(c, [[px, py], [px, -0.3], [hx, -0.3 - Math.abs(hx - px)], [hx, hy]]);
     });
-    [[pin(2, 1), [0.1, 0.62]], [pin(2, 6), [1.38, 0.62]], [pin(2, 3), [0.34, 0.86]]].forEach(([[px, py], [tx, ty]]) => {
-      path([[px, py], [px, ty - Math.abs(tx - px) * 0.4], [tx, ty]]);
-    });
+    const [a1, b1] = pin(2, 1), [a2, b2] = pin(2, 2), [a3, b3] = pin(2, 3), [a6, b6] = pin(2, 6), [a7, b7] = pin(2, 7);
+    path(c, [[a1, b1], [a1, 0.59], [XTAL.x + 0.085, 0.59]]); // crystal
+    path(c, [[a2, b2], [a2, 0.65], [XTAL.x + 0.085, 0.65]]);
+    path(c, [[a3, b3], [a3, 0.8], [a3 - 0.06, 0.86], [0.34, 0.86]]); // to a via
+    path(c, [[a6, b6], [a6, 0.52], [a6 + 0.1, 0.62], [0.97, 0.62]]); // → R1 → D1
+    path(c, [[1.03, 0.62], [LED.x - 0.03, 0.62]]);
+    path(c, [[LED.x + 0.03, 0.62], [1.5, 0.62], [1.54, 0.66]]);
+    path(c, [[a7, b7], [a7, 0.5], [0.97, 0.5]]); // → R2 → the button
+    path(c, [[1.03, 0.5], [1.08, 0.5], [1.135, BTN.y + 0.04], [BTN.x - 0.09, BTN.y + 0.04]]);
+    path(c, [[BTN.x + 0.09, BTN.y - 0.04], [1.585, BTN.y - 0.095]]);
+    const [p0x, p0y] = pin(3, 0);
+    path(c, [[p0x, p0y], [p0x, -0.05], [0.39, -0.05]]); // decoupling caps
+    path(c, [[0.23, -0.05], [0.33, -0.05]]);
     [2, 4, 6].forEach((k, i) => {
       const [px, py] = pin(1, k);
-      path([[px, py], [0.1 - i * 0.12, py], [-0.1 - i * 0.12, py - 0.2], [-0.1 - i * 0.12, -0.55 - i * 0.06]]);
+      path(c, [[px, py], [0.1 - i * 0.12, py], [-0.1 - i * 0.12, py - 0.2], [-0.1 - i * 0.12, -0.55 - i * 0.06]]);
     });
-    // a copper pour along the lower edge, stitched with vias
-    c.globalAlpha = 0.55;
+    // a ground pour along the lower edge, stitched with vias
+    c.globalAlpha = 0.6;
     c.fillRect(X(-1.62), Y(-0.93), L(1.5), L(0.08));
-    c.globalAlpha = 1;
   });
-  for (let i = 0; i < 9; i++) hole(a, b, X(-1.55 + i * 0.16), Y(-0.89), L(0.018));
+  for (let i = 0; i < 9; i++) tented(P, X(-1.55 + i * 0.16), Y(-0.89), L(0.02));
 
-  // gold: chip pads, header, fingers, fiducials, test points
-  gold(a, b, (c) => {
+  // gold: pads, fingers, fiducials
+  gold(P, (c) => {
     for (let k = 0; k < 8; k++) {
       [0, 1].forEach((side) => { const [x, y] = pin(side, k); c.fillRect(X(x) - L(0.03), Y(y) - L(0.009), L(0.06), L(0.018)); });
       [2, 3].forEach((side) => { const [x, y] = pin(side, k); c.fillRect(X(x) - L(0.009), Y(y) - L(0.03), L(0.018), L(0.06)); });
     }
-    c.fillRect(X(chip.x - 0.13), Y(chip.y + 0.13), L(0.26), L(0.26)); // exposed pad, under the chip
-    fingers.forEach((fy) => {
-      c.beginPath();
-      c.roundRect(X(1.8), Y(fy + 0.045), L(0.36), L(0.09), L(0.015));
-      c.fill();
+    const pad = (x, y, w, h) => c.fillRect(X(x - w / 2), Y(y + h / 2), L(w), L(h));
+    PASSIVES.forEach(([x, y]) => { pad(x - 0.032, y, 0.034, 0.044); pad(x + 0.032, y, 0.034, 0.044); });
+    CORNERS.forEach(([sx, sy]) => {
+      pad(XTAL.x + sx * 0.085, XTAL.y + sy * 0.03, 0.04, 0.034);
+      pad(BTN.x + sx * 0.09, BTN.y + sy * 0.04, 0.045, 0.03);
     });
+    pad(LED.x - 0.03, LED.y, 0.03, 0.04);
+    pad(LED.x + 0.03, LED.y, 0.03, 0.04);
+    FINGERS.forEach((fy) => { c.beginPath(); c.roundRect(X(1.8), Y(fy + 0.045), L(0.36), L(0.09), L(0.015)); c.fill(); });
     [[1.55, 0.9], [-1.55, -0.62]].forEach(([x, y]) => { c.beginPath(); c.arc(X(x), Y(y), L(0.022), 0, Math.PI * 2); c.fill(); });
   });
-  holes.forEach(([x, y]) => hole(a, b, X(x), Y(y), L(0.05)));
-  [[0.34, 0.86], [-0.34, -0.61], [-0.46, -0.67]].forEach(([x, y]) => hole(a, b, X(x), Y(y), L(0.022)));
+  // fiducials sit in a clear ring of bare laminate
+  layer(P.a, '#1c1a14', (c) => [[1.55, 0.9], [-1.55, -0.62]].forEach(([x, y]) => {
+    c.lineWidth = L(0.012); c.beginPath(); c.arc(X(x), Y(y), L(0.04), 0, Math.PI * 2); c.stroke();
+  }));
+  [[0.34, 0.86], [-0.1, -0.55], [-0.22, -0.61], [-0.34, -0.67], [1.54, 0.66], [1.585, BTN.y - 0.095]].forEach(([x, y]) => ring(P, X(x), Y(y), L(0.022)));
+  HOLES.forEach(([x, y]) => ring(P, X(x), Y(y), L(0.052), L(DRILL)));
+
+  // contact shadows under the parts
+  ao(P, X(CHIP.x), Y(CHIP.y), L(0.4), L(0.4), L(0.05));
+  ao(P, X(XTAL.x), Y(XTAL.y), L(0.2), L(0.1), L(0.03));
+  ao(P, X(BTN.x), Y(BTN.y), L(0.15), L(0.11), L(0.03));
+  PASSIVES.forEach(([x, y]) => ao(P, X(x), Y(y), L(0.06), L(0.034), L(0.02), 0.7));
 
   // silkscreen: logo, name, refdes, header labels, outlines
-  silk(a, b, (c) => {
+  silk(P, (c) => {
     c.lineWidth = L(0.012);
+    c.lineCap = 'butt';
     // the HB mark; its crossbar is left for the LED
     c.save();
     c.translate(X(LOGO.x), Y(LOGO.y));
@@ -177,25 +232,30 @@ function frontFace() {
     c.font = font(500, L(0.045), true);
     ['3V3', 'GND', 'TX', 'RX', 'IO0', 'EN'].forEach((t, k) => {
       const w = c.measureText(t).width;
-      c.fillText(t, X(holes[k][0]) - w / 2, Y(-0.95));
+      c.fillText(t, X(HOLES[k][0]) - w / 2, Y(-0.95));
     });
     c.strokeRect(X(0.0), Y(-0.69), L(1.24), L(0.22));
-    [['U1', chip.x - 0.22, chip.y + 0.3], ['Y1', -0.05, 0.75], ['D1', 1.3, 0.73], ['J1', 1.4, -0.52], ['J2', -0.02, -0.63], ['C1', 0.2, -0.12], ['C2', 0.36, -0.12], ['R1', 1.0, 0.72]].forEach(([t, x, y]) => c.fillText(t, X(x), Y(y)));
-    c.strokeRect(X(chip.x - 0.26), Y(chip.y + 0.26), L(0.52), L(0.52));
-    c.beginPath(); c.arc(X(chip.x - 0.3), Y(chip.y + 0.3), L(0.014), 0, Math.PI * 2); c.fill(); // pin 1
+    c.strokeRect(X(HOLES[0][0] - 0.07), Y(-0.73), L(0.14), L(0.14)); // pin 1 gets a square
+    [['U1', CHIP.x - 0.22, CHIP.y + 0.3], ['Y1', -0.05, 0.75], ['D1', 1.3, 0.73], ['J1', 1.4, -0.52], ['J2', 1.27, -0.83],
+      ['C1', 0.17, -0.13], ['C2', 0.33, -0.13], ['R1', 0.96, 0.7], ['R2', 0.96, 0.42], ['SW1', BTN.x - 0.08, BTN.y + 0.12], ['BOOT', BTN.x - 0.08, BTN.y - 0.15]]
+      .forEach(([t, x, y]) => c.fillText(t, X(x), Y(y)));
+    c.strokeRect(X(CHIP.x - 0.26), Y(CHIP.y + 0.26), L(0.52), L(0.52));
+    c.beginPath(); c.arc(X(CHIP.x - 0.3), Y(CHIP.y + 0.3), L(0.014), 0, Math.PI * 2); c.fill(); // pin 1
+    // LED polarity
+    c.beginPath(); c.moveTo(X(LED.x + 0.07), Y(LED.y + 0.035)); c.lineTo(X(LED.x + 0.07), Y(LED.y - 0.035)); c.stroke();
     c.font = font(600, L(0.05), true);
     c.fillText('USB', X(1.86), Y(0.36));
   });
 
-  return { col, orm };
+  return P;
 }
 
 function backFace() {
-  const { col, orm, a, b } = surface();
+  const P = surface();
   // drawn as the viewer sees the back: the tab is on the left
   const { X, Y, L } = toPx(-maxX);
   // an antenna coil around the edge, in copper under the mask
-  copper(a, (c) => {
+  copper(P, (c) => {
     c.lineWidth = L(0.018);
     for (let i = 0; i < 4; i++) {
       const d = 0.1 + i * 0.045;
@@ -204,34 +264,42 @@ function backFace() {
       c.stroke();
     }
   });
-  gold(a, b, (c) => [-0.2, -0.067, 0.067, 0.2].forEach((fy) => {
+  gold(P, (c) => FINGERS.forEach((fy) => {
     c.beginPath(); c.roundRect(X(-2.16), Y(fy + 0.045), L(0.36), L(0.09), L(0.015)); c.fill();
   }));
+  HOLES.forEach(([x, y]) => ring(P, X(-x), Y(y), L(0.052), L(DRILL)));
+  for (let i = 0; i < 9; i++) tented(P, X(1.55 - i * 0.16), Y(-0.89), L(0.02));
 
   // QR: silkscreen ground, mask modules, so it scans the right way round
   const { size, on } = qrMatrix();
   const q = 0.84, qx = 0.6, qy = 0.44, cell = q / (size + 2);
-  silk(a, b, (c) => c.fillRect(X(qx), Y(qy), L(q), L(q)));
-  a.fillStyle = MASK;
-  for (let r = 0; r < size; r++) for (let k = 0; k < size; k++) if (on(r, k)) a.fillRect(X(qx + (k + 1) * cell), Y(qy - (r + 1) * cell), L(cell) + 0.6, L(cell) + 0.6);
+  silk(P, (c) => c.fillRect(X(qx), Y(qy), L(q), L(q)));
+  const mod = (c) => {
+    for (let r = 0; r < size; r++) for (let k = 0; k < size; k++) if (on(r, k)) c.fillRect(X(qx + (k + 1) * cell), Y(qy - (r + 1) * cell), L(cell) + 0.6, L(cell) + 0.6);
+  };
+  layer(P.a, MASK, mod);
+  layer(P.b, 'rgb(255,120,0)', mod);
+  layer(P.h, 'rgb(110,110,110)', mod);
 
-  silk(a, b, (c) => {
+  const gap = CARD.rows.length > 4 ? 0.245 : 0.3;
+  silk(P, (c) => {
     c.font = font(500, L(0.048), true);
     c.fillText('CONTACT', X(-1.36), Y(0.74));
     c.fillText('SCAN → PORTFOLIO', X(qx), Y(qy - q - 0.1));
     CARD.rows.forEach(([k, v], i) => {
-      const y = 0.46 - i * 0.3;
+      const y = 0.46 - i * gap;
       c.font = font(500, L(0.045), true);
       c.fillText(k.toUpperCase(), X(-1.36), Y(y));
       c.font = font(600, L(0.085), false);
       c.fillText(v, X(-1.36), Y(y - 0.12));
     });
     c.font = font(500, L(0.042), true);
-    c.fillText('HB-26 · ANT1 · SN 0001', X(-1.36), Y(-0.86));
+    c.fillText('HB-26 · ANT1 · SN 0001', X(qx), Y(-0.66));
+    c.fillText('94V-0 · 2626', X(qx), Y(-0.74));
     c.lineWidth = L(0.01);
     c.strokeRect(X(-1.42), Y(0.86), L(0.06), L(0.06));
   });
-  return { col, orm };
+  return P;
 }
 
 function uvRemap(geo, xMin) {
@@ -240,19 +308,117 @@ function uvRemap(geo, xMin) {
   uv.needsUpdate = true;
 }
 
+// tileable value noise → a normal map: the clear coat's orange peel
+function peel() {
+  const n = 256, g = 16, data = new Uint8Array(n * n * 4);
+  const grid = (m) => Array.from({ length: m * m }, rnd);
+  const oct = [[g, grid(g), 1], [g * 2, grid(g * 2), 0.45]];
+  const height = (x, y) => oct.reduce((s, [m, v, amp]) => {
+    const fx = (x / n) * m, fy = (y / n) * m, ix = Math.floor(fx), iy = Math.floor(fy);
+    const tx = fx - ix, ty = fy - iy, sx = tx * tx * (3 - 2 * tx), sy = ty * ty * (3 - 2 * ty);
+    const at = (i, j) => v[(j % m) * m + (i % m)];
+    const top = at(ix, iy) + (at(ix + 1, iy) - at(ix, iy)) * sx;
+    const bot = at(ix, iy + 1) + (at(ix + 1, iy + 1) - at(ix, iy + 1)) * sx;
+    return s + (top + (bot - top) * sy) * amp;
+  }, 0);
+  const H = new Float32Array(n * n);
+  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) H[y * n + x] = height(x, y);
+  const h = (x, y) => H[((y + n) % n) * n + ((x + n) % n)];
+  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+    const dx = (h(x - 1, y) - h(x + 1, y)) * 3, dy = (h(x, y - 1) - h(x, y + 1)) * 3;
+    const l = Math.hypot(dx, dy, 1), i = (y * n + x) * 4;
+    data[i] = ((dx / l) * 0.5 + 0.5) * 255;
+    data[i + 1] = ((dy / l) * 0.5 + 0.5) * 255;
+    data[i + 2] = ((1 / l) * 0.5 + 0.5) * 255;
+    data[i + 3] = 255;
+  }
+  const t = new THREE.DataTexture(data, n, n);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.magFilter = THREE.LinearFilter;
+  t.minFilter = THREE.LinearMipmapLinearFilter;
+  t.generateMipmaps = true;
+  t.repeat.set(SPANX * 1.2, SPANY * 1.2);
+  t.needsUpdate = true;
+  return t;
+}
+
+// where hands have been: the clear coat's gloss, smudged a little
+function smudges(thumb) {
+  const c = document.createElement('canvas');
+  c.width = 512;
+  c.height = Math.round((512 * SPANY) / SPANX);
+  const g = c.getContext('2d');
+  g.fillStyle = 'rgb(0,24,0)';
+  g.fillRect(0, 0, c.width, c.height);
+  for (let i = 0; i < 5; i++) {
+    const x = rnd() * c.width, y = rnd() * c.height, r = 40 + rnd() * 90;
+    const gr = g.createRadialGradient(x, y, 0, x, y, r);
+    gr.addColorStop(0, 'rgba(0,70,0,0.5)');
+    gr.addColorStop(1, 'rgba(0,70,0,0)');
+    g.fillStyle = gr;
+    g.fillRect(x - r, y - r, r * 2, r * 2);
+  }
+  const [x, y] = thumb;
+  g.save();
+  g.translate(x * c.width, y * c.height);
+  g.rotate(-0.5);
+  g.strokeStyle = 'rgba(0,95,0,0.22)';
+  g.lineWidth = 1.4;
+  for (let r = 3; r < 30; r += 2.6) { g.beginPath(); g.ellipse(0, 0, r * 0.75, r, 0, 0.2, Math.PI * 2 - 0.4); g.stroke(); }
+  g.restore();
+  return new THREE.CanvasTexture(c);
+}
+
+// the routed edge: glass-fibre laminate, copper and mask lines at each face
+function fr4() {
+  const c = document.createElement('canvas');
+  c.width = 256; c.height = 64;
+  const g = c.getContext('2d');
+  g.fillStyle = '#7a7155';
+  g.fillRect(0, 0, 256, 64);
+  for (let y = 4; y < 60; y++) {
+    g.fillStyle = rnd() > 0.5 ? `rgba(255,248,215,${rnd() * 0.09})` : `rgba(30,26,12,${rnd() * 0.1})`;
+    g.fillRect(0, y, 256, 1);
+  }
+  for (let i = 0; i < 500; i++) {
+    g.fillStyle = rnd() > 0.5 ? 'rgba(255,250,225,0.18)' : 'rgba(20,18,10,0.2)';
+    g.fillRect(rnd() * 256, 4 + rnd() * 56, 2 + rnd() * 10, 1);
+  }
+  g.fillStyle = '#0c0d0d';
+  g.fillRect(0, 0, 256, 3);
+  g.fillRect(0, 61, 256, 3);
+  g.fillStyle = '#8a6a3e';
+  g.fillRect(0, 3, 256, 1);
+  g.fillRect(0, 60, 256, 1);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.wrapS = THREE.RepeatWrapping;
+  // side-wall v runs 1 − z across the board's depth; map exactly that band
+  t.repeat.set(5, 1 / T);
+  t.offset.set(0, -(1 - T + BEV) / T);
+  return t;
+}
+
 function chipTop() {
   const c = document.createElement('canvas');
   c.width = c.height = 256;
   const g = c.getContext('2d');
-  g.fillStyle = '#141414';
+  g.fillStyle = '#161616';
   g.fillRect(0, 0, 256, 256);
-  g.fillStyle = 'rgba(210,210,205,0.55)';
+  for (let i = 0; i < 3000; i++) {
+    g.fillStyle = `rgba(255,255,255,${rnd() * 0.04})`;
+    g.fillRect(rnd() * 256, rnd() * 256, 1, 1);
+  }
+  // laser marking: lighter and rougher than the mould
+  g.fillStyle = 'rgba(190,190,185,0.6)';
   g.font = font(600, 34, true);
-  g.fillText('HB·MCU', 40, 110);
-  g.font = font(500, 24, true);
-  g.fillText('2626 A1', 40, 150);
-  g.fillText('MUMBAI', 40, 182);
-  g.beginPath(); g.arc(34, 34, 9, 0, Math.PI * 2); g.fill();
+  g.fillText('HB·MCU', 40, 118);
+  g.font = font(500, 22, true);
+  g.fillText('2626 A1', 40, 156);
+  g.fillText('MUMBAI', 40, 186);
+  // pin-1 dimple
+  g.fillStyle = '#0b0b0b';
+  g.beginPath(); g.arc(36, 36, 11, 0, Math.PI * 2); g.fill();
   const t = new THREE.CanvasTexture(c);
   t.colorSpace = THREE.SRGBColorSpace;
   return t;
@@ -260,20 +426,30 @@ function chipTop() {
 
 export async function createPcbCard(canvas, { still = false } = {}) {
   await document.fonts?.ready;
+  seed = 11;
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' });
   renderer.setClearColor(0x000000, 0);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.05;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFShadowMap;
   const scene = new THREE.Scene();
   const pmrem = new THREE.PMREMGenerator(renderer);
   scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
   // a dim studio: the mask stays black, the gloss and the gold still catch it
   scene.environmentIntensity = 0.3;
   const camera = new THREE.PerspectiveCamera(28, 1, 0.1, 50);
-  camera.position.set(0, 0, 9.2);
+  camera.position.set(0, 0, 8.6);
 
-  const key = new THREE.DirectionalLight(0xffffff, 0.7);
-  key.position.set(-6, 7, 2.5);
+  // a raking key light: long, soft shadows off every part
+  const key = new THREE.DirectionalLight(0xffffff, 0.9);
+  key.position.set(-6, 7, 3.2);
+  key.castShadow = true;
+  key.shadow.mapSize.set(coarse ? 1024 : 2048, coarse ? 1024 : 2048);
+  Object.assign(key.shadow.camera, { left: -2.5, right: 2.5, top: 2.5, bottom: -2.5, near: 1, far: 20 });
+  key.shadow.bias = -0.0003;
+  key.shadow.normalBias = 0.002;
+  key.shadow.radius = 3;
   // a cool rim from behind picks the board out of the dark page
   const rim = new THREE.DirectionalLight(0xdfe6ff, 1.1);
   rim.position.set(4, 3, -5);
@@ -286,11 +462,16 @@ export async function createPcbCard(canvas, { still = false } = {}) {
     if (srgb) t.colorSpace = THREE.SRGBColorSpace;
     return t;
   };
-  const faceMat = ({ col, orm }) => {
+  const coat = peel();
+  const faceMat = ({ col, orm, bump }, thumb) => {
     const m = tex(orm, false);
     return new THREE.MeshPhysicalMaterial({
       map: tex(col, true), roughnessMap: m, metalnessMap: m, clearcoatMap: m,
-      roughness: 1, metalness: 1, clearcoat: 1, clearcoatRoughness: 0.12,
+      bumpMap: tex(bump, false), bumpScale: 1.4,
+      roughness: 1, metalness: 1, clearcoat: 1,
+      clearcoatRoughness: 1, clearcoatRoughnessMap: smudges(thumb),
+      clearcoatNormalMap: coat, clearcoatNormalScale: new THREE.Vector2(0.022, 0.022),
+      alphaTest: 0.5,
     });
   };
 
@@ -299,51 +480,111 @@ export async function createPcbCard(canvas, { still = false } = {}) {
   flipper.add(card);
   scene.add(flipper);
 
-  // board: fibreglass edge + two textured faces
-  const edge = new THREE.ExtrudeGeometry(outline(false), { depth: T, bevelEnabled: false, curveSegments: 10 });
-  edge.translate(0, 0, -T / 2);
-  card.add(new THREE.Mesh(edge, [new THREE.MeshBasicMaterial({ visible: false }), new THREE.MeshStandardMaterial({ color: '#77705a', roughness: 0.75 })]));
-  const top = new THREE.ShapeGeometry(outline(false), 10);
+  // board: routed fibreglass edge + two textured faces, holes drilled through both
+  const edge = new THREE.ExtrudeGeometry(outline(false), {
+    depth: T - BEV * 2, curveSegments: 12,
+    bevelEnabled: true, bevelThickness: BEV, bevelSize: BEV, bevelOffset: -BEV, bevelSegments: 2,
+  });
+  edge.translate(0, 0, -(T / 2 - BEV));
+  const edgeTex = fr4();
+  card.add(new THREE.Mesh(edge, [
+    new THREE.MeshBasicMaterial({ visible: false }),
+    new THREE.MeshStandardMaterial({ map: edgeTex, bumpMap: edgeTex, bumpScale: 0.6, roughness: 0.8 }),
+  ]));
+  const top = new THREE.ShapeGeometry(outline(false, BEV), 12);
   uvRemap(top, minX);
-  const topMesh = new THREE.Mesh(top, faceMat(frontFace()));
-  topMesh.position.z = T / 2 + 0.0006;
-  const bot = new THREE.ShapeGeometry(outline(true), 10);
+  const topMesh = new THREE.Mesh(top, faceMat(frontFace(), [0.86, 0.72]));
+  topMesh.position.z = T / 2 + 0.0004;
+  const bot = new THREE.ShapeGeometry(outline(true, BEV), 12);
   uvRemap(bot, -maxX);
-  const botMesh = new THREE.Mesh(bot, faceMat(backFace()));
+  const botMesh = new THREE.Mesh(bot, faceMat(backFace(), [0.12, 0.3]));
   botMesh.rotation.y = Math.PI;
-  botMesh.position.z = -T / 2 - 0.0006;
+  botMesh.position.z = -T / 2 - 0.0004;
+  topMesh.receiveShadow = botMesh.receiveShadow = true;
   card.add(topMesh, botMesh);
 
-  // parts on top
+  // plated barrels inside the drilled holes
+  const barrels = mergeGeometries(HOLES.map(([x, y]) => {
+    const g = new THREE.CylinderGeometry(DRILL, DRILL, T + 0.001, 20, 1, true);
+    g.rotateX(Math.PI / 2);
+    g.translate(x, y, 0);
+    return g;
+  }));
+  card.add(new THREE.Mesh(barrels, new THREE.MeshStandardMaterial({ color: '#d9a651', metalness: 1, roughness: 0.3, side: THREE.DoubleSide })));
+
+  /* ── Parts ── */
   const z0 = T / 2;
-  const part = (w, h, d, mat, x, y) => {
-    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
-    m.position.set(x, y, z0 + d / 2);
+  const tin = new THREE.MeshStandardMaterial({ color: '#d4d7da', metalness: 1, roughness: 0.3 });
+  const nickel = new THREE.MeshStandardMaterial({ color: '#c9ccd0', metalness: 1, roughness: 0.2 });
+  const mold = new THREE.MeshStandardMaterial({ color: '#181818', roughness: 0.66 });
+  const add = (geo, mat, x, y, z) => {
+    const m = new THREE.Mesh(geo, mat);
+    m.position.set(x, y, z0 + z);
+    m.castShadow = m.receiveShadow = true;
     card.add(m);
     return m;
   };
-  const mold = new THREE.MeshStandardMaterial({ color: '#161616', roughness: 0.55 });
-  part(0.44, 0.44, 0.045, [mold, mold, mold, mold, new THREE.MeshStandardMaterial({ map: chipTop(), roughness: 0.6 }), mold], 0.62, 0.22);
-  part(0.22, 0.1, 0.045, new THREE.MeshStandardMaterial({ color: '#d9dcdf', metalness: 1, roughness: 0.28 }), 0.1, 0.62);
-  const ceramic = new THREE.MeshStandardMaterial({ color: '#a8895a', roughness: 0.6 });
-  const resist = new THREE.MeshStandardMaterial({ color: '#1c1c1c', roughness: 0.5 });
-  [[0.2, -0.05, ceramic], [0.36, -0.05, ceramic], [1.0, 0.62, resist], [1.0, 0.5, resist]].forEach(([x, y, m]) => part(0.075, 0.038, 0.024, m, x, y));
+  const rbox = (w, h, d, r) => new RoundedBoxGeometry(w, h, d, 2, r);
 
-  // LEDs: the logo's crossbar, and a blinking status light
-  const ledMat = () => new THREE.MeshStandardMaterial({ color: '#ffb58c', emissive: '#ff5b14', emissiveIntensity: 1.2, roughness: 0.3 });
-  const logoLed = part(9 * LOGO.s, 0.042, 0.022, ledMat(), LOGO.x + 8.5 * LOGO.s, LOGO.y - 14 * LOGO.s);
-  const statusLed = part(0.07, 0.04, 0.022, ledMat(), 1.38, 0.62);
+  // U1: a QFP, body plus 32 gull-wing leads soldered to their pads
+  add(rbox(0.4, 0.4, 0.05, 0.008), mold, CHIP.x, CHIP.y, 0.026);
+  const mark = add(new THREE.PlaneGeometry(0.38, 0.38), new THREE.MeshStandardMaterial({ map: chipTop(), roughness: 0.55 }), CHIP.x, CHIP.y, 0.0515);
+  mark.castShadow = false;
+  const lead = mergeGeometries([
+    new THREE.BoxGeometry(0.024, 0.016, 0.006).translate(0.212, 0, 0.024),
+    new THREE.BoxGeometry(0.006, 0.016, 0.024).translate(0.224, 0, 0.013),
+    new THREE.BoxGeometry(0.03, 0.016, 0.006).translate(0.237, 0, 0.003),
+  ]);
+  const leads = [];
+  for (let side = 0; side < 4; side++) for (let k = 0; k < 8; k++) {
+    const off = -0.1575 + k * 0.045;
+    const g = lead.clone().rotateZ([0, Math.PI, Math.PI / 2, -Math.PI / 2][side]);
+    g.translate(side < 2 ? 0 : off, side < 2 ? off : 0, 0);
+    leads.push(g);
+  }
+  add(mergeGeometries(leads), tin, CHIP.x, CHIP.y, 0);
+
+  // Y1: a ceramic crystal can under a nickel lid
+  add(rbox(0.2, 0.1, 0.014, 0.003), new THREE.MeshStandardMaterial({ color: '#d6ccb4', roughness: 0.6 }), XTAL.x, XTAL.y, 0.007);
+  add(rbox(0.184, 0.086, 0.016, 0.005), nickel, XTAL.x, XTAL.y, 0.021);
+
+  // 0603 passives: body, tinned end caps, a solder fillet on each pad
+  const ceramic = new THREE.MeshStandardMaterial({ color: '#a4865a', roughness: 0.62 });
+  const film = new THREE.MeshStandardMaterial({ color: '#141414', roughness: 0.45 });
+  PASSIVES.forEach(([x, y, kind]) => {
+    add(rbox(0.05, 0.032, 0.02, 0.003), kind === 'cap' ? ceramic : film, x, y, 0.011);
+    [-1, 1].forEach((s) => {
+      add(rbox(0.012, 0.034, 0.022, 0.003), tin, x + s * 0.029, y, 0.011);
+      add(new THREE.BoxGeometry(0.014, 0.04, 0.006), tin, x + s * 0.04, y, 0.003);
+    });
+  });
+
+  // SW1: a tactile switch, steel frame and a black plunger
+  add(rbox(0.15, 0.11, 0.024, 0.004), nickel, BTN.x, BTN.y, 0.012);
+  const plunger = add(new THREE.CylinderGeometry(0.03, 0.03, 0.016, 28).rotateX(Math.PI / 2), new THREE.MeshStandardMaterial({ color: '#111', roughness: 0.5 }), BTN.x, BTN.y, 0.032);
+  CORNERS.forEach(([sx, sy]) => add(new THREE.BoxGeometry(0.036, 0.018, 0.006), tin, BTN.x + sx * 0.09, BTN.y + sy * 0.04, 0.003));
+
+  // LEDs: the logo's crossbar, and a blinking status light, each on a white package
+  const white = new THREE.MeshStandardMaterial({ color: '#ece8de', roughness: 0.45 });
+  const lens = () => new THREE.MeshPhysicalMaterial({ color: '#ffb58c', emissive: '#ff5b14', emissiveIntensity: 1.2, roughness: 0.15, clearcoat: 1 });
+  const bx = LOGO.x + 8.5 * LOGO.s, by = LOGO.y - 14 * LOGO.s;
+  add(rbox(9 * LOGO.s + 0.01, 0.05, 0.012, 0.003), white, bx, by, 0.006);
+  const logoLed = add(rbox(9 * LOGO.s, 0.04, 0.012, 0.004), lens(), bx, by, 0.016);
+  add(rbox(0.064, 0.034, 0.012, 0.003), white, LED.x, LED.y, 0.006);
+  const statusLed = add(rbox(0.05, 0.028, 0.01, 0.004), lens(), LED.x, LED.y, 0.015);
+  [-1, 1].forEach((s) => add(new THREE.BoxGeometry(0.012, 0.036, 0.006), tin, LED.x + s * 0.036, LED.y, 0.003));
   const spill = new THREE.PointLight('#ff6a24', 0.35, 0.9, 2);
-  spill.position.set(LOGO.x + 8.5 * LOGO.s, LOGO.y - 14 * LOGO.s, z0 + 0.12);
+  spill.position.set(bx, by, z0 + 0.12);
   card.add(spill);
 
   /* ── Motion ── */
-  const state = { enter: 0, flip: 0, flipTo: 0, drag: 0, dragV: 0, tx: 0, ty: 0, px: 0, py: 0 };
+  const state = { enter: 0, flip: 0, flipTo: 0, drag: 0, dragV: 0, tx: 0, ty: 0, px: 0, py: 0, press: 0 };
   let W = 0, H = 0, t = 0, raf = 0, visible = false, last = 0;
   const resize = () => {
     const r = canvas.getBoundingClientRect();
     W = r.width; H = r.height;
-    renderer.setPixelRatio(Math.min(devicePixelRatio, matchMedia('(pointer: coarse)').matches ? 1.75 : 2));
+    // supersample a little on 1x screens: the detail is fine
+    renderer.setPixelRatio(coarse ? Math.min(devicePixelRatio, 1.75) : Math.max(1.5, Math.min(devicePixelRatio, 2)));
     renderer.setSize(W, H, false);
     camera.aspect = W / H;
     camera.updateProjectionMatrix();
@@ -365,10 +606,12 @@ export async function createPcbCard(canvas, { still = false } = {}) {
     const dt = Math.min(0.05, (now - last) / 1000 || 0.016);
     last = now;
     t += dt;
-    const blink = Math.sin(t * 5) > 0.55 ? 2.4 : 0.15;
-    statusLed.material.emissiveIntensity = blink;
+    statusLed.material.emissiveIntensity = Math.sin(t * 5) > 0.55 ? 2.4 : 0.15;
     logoLed.material.emissiveIntensity = 1.1 + Math.sin(t * 1.6) * 0.35;
     spill.intensity = 0.28 + Math.sin(t * 1.6) * 0.1;
+    // the switch clicks down on a flip and springs back
+    state.press *= 0.86;
+    plunger.position.z = z0 + 0.032 - state.press * 0.009;
     pose();
     renderer.render(scene, camera);
   }
@@ -399,6 +642,7 @@ export async function createPcbCard(canvas, { still = false } = {}) {
   const onUp = (e) => {
     if (down && Math.hypot(e.clientX - down[0], e.clientY - down[1]) < 7) {
       state.flipTo = state.flipTo ? 0 : Math.PI;
+      state.press = 1;
       // settle any spin so the flip lands square
       state.drag = ((state.drag % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
       if (state.drag > Math.PI) state.drag -= Math.PI * 2;
@@ -428,10 +672,9 @@ export async function createPcbCard(canvas, { still = false } = {}) {
       renderer.setSize(1700, 1100, false);
       camera.aspect = 1700 / 1100;
       // zoom rather than move closer, so reflections sit as they do live
-      camera.zoom = 1.3;
+      camera.zoom = 1.25;
       camera.updateProjectionMatrix();
       const shoot = (flip, y) => {
-        Object.assign(state, { flip, flipTo: flip, drag: 0, dragV: 0, tx: 0, ty: 0, px: 0, py: 0 });
         flipper.rotation.set(-0.22, flip - 0.32, 0.05); // the resting pose
         flipper.position.y = 0;
         renderer.render(scene, camera);
@@ -445,9 +688,9 @@ export async function createPcbCard(canvas, { still = false } = {}) {
       g.fillText('HARSHBAVASKAR.GITHUB.IO/PORTFOLIO', out.width / 2, out.height - 60);
       Object.assign(state, keep);
       camera.zoom = 1;
-      if (!visible) { pose(); renderer.render(scene, camera); }
       renderer.setPixelRatio(keepPR);
       resize();
+      if (!visible) { pose(); renderer.render(scene, camera); }
       return new Promise((res) => out.toBlob(res, 'image/jpeg', 0.92));
     },
     dispose() {
@@ -458,7 +701,13 @@ export async function createPcbCard(canvas, { still = false } = {}) {
       canvas.removeEventListener('pointerdown', onDown);
       removeEventListener('pointerup', onUp);
       canvas.removeEventListener('pointerleave', onLeave);
-      scene.traverse((o) => { o.geometry?.dispose(); });
+      scene.traverse((o) => {
+        o.geometry?.dispose();
+        [].concat(o.material || []).forEach((m) => {
+          Object.values(m).forEach((v) => v?.isTexture && v.dispose());
+          m.dispose();
+        });
+      });
       pmrem.dispose();
       renderer.dispose();
     },

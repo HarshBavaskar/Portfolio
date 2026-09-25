@@ -95,8 +95,10 @@ export default function Rover() {
             if (performance.now() < skipUntil) return;
             go(Math.min(STEPS.length - 1, Math.floor(self.progress * STEPS.length)));
           },
-          onEnter: () => go(0),
+          onEnter: () => { if (performance.now() >= skipUntil) go(0); },
           onLeaveBack: () => go(-1),
+          // past the chapter the rover has always driven off — even after a jump
+          onLeave: () => { tween?.kill(); tl.progress(1); index = STEPS.length - 1; },
         });
         // menu jumps skip straight to where the sequence should be
         const off = bus.on('navigate', (y) => {

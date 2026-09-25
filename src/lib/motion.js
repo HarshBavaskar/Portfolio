@@ -36,13 +36,13 @@ export function initScroll() {
   };
 }
 
-export function scrollTo(target) {
+export function scrollTo(target, { instant = false } = {}) {
   const el = document.querySelector(target);
   if (!el) return;
   const y = el.getBoundingClientRect().top + window.scrollY;
   bus.emit('navigate', y);
-  if (lenis) lenis.scrollTo(y, { duration: 1.6, easing: (t) => 1 - Math.pow(1 - t, 4) });
-  else window.scrollTo({ top: y, behavior: reduced ? 'auto' : 'smooth' });
+  if (lenis) lenis.scrollTo(y, instant ? { immediate: true } : { duration: 1.6, easing: (t) => 1 - Math.pow(1 - t, 4) });
+  else window.scrollTo({ top: y, behavior: instant || reduced ? 'auto' : 'smooth' });
 }
 
 export const lockScroll = (on) => {

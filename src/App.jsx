@@ -73,7 +73,7 @@ export default function App() {
     ScrollTrigger.refresh();
     // links like ../#work-tux land on their section once everything is measured
     const hash = location.hash;
-    if (hash && document.querySelector(hash)) requestAnimationFrame(() => scrollTo(hash));
+    if (hash && document.querySelector(hash)) requestAnimationFrame(() => scrollTo(hash, { instant: true })); // under the wipe, no fly-through
     return () => ctx.revert();
   }, [ready]);
 

@@ -24,7 +24,7 @@ export default function About() {
   }, []);
 
   return (
-    <section id="about" className="ab" ref={root} data-chapter data-theme="light">
+    <section id="about" className="ab" ref={root} data-chapter data-theme="tangelo">
       <div className="wrap">
         <div className="sec-head mono">
           <span>02 / About</span>

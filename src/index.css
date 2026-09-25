@@ -1,15 +1,16 @@
 /* ─────────────────────────────────────────────────────────
-   Tokens: paper, ink, one signal colour. Themes are tweened
-   from JS (lib/motion.js); these are the light defaults.
+   Tokens: a palette of chapter colours and one accent. Themes
+   are tweened from JS (lib/motion.js); these are the defaults.
    ───────────────────────────────────────────────────────── */
 :root {
-  --bg: rgb(238, 236, 231);
-  --fg: rgb(18, 18, 18);
-  --mute: rgb(128, 125, 118);
-  --panel: rgb(228, 225, 218);
-  --line: rgba(18, 18, 18, 0.14);
-  --line-strong: rgba(18, 18, 18, 0.32);
-  --signal: #ff5b14;
+  --bg: rgb(235, 235, 223);
+  --fg: rgb(34, 34, 32);
+  --mute: rgb(124, 122, 110);
+  --panel: rgb(224, 224, 208);
+  --line: rgba(34, 34, 32, 0.16);
+  --line-strong: rgba(34, 34, 32, 0.36);
+  --signal: rgb(235, 70, 0); /* the accent: follows each chapter's colour */
+  --brand: #ff5b14; /* the top rail: always this orange */
   --lcd: #141413;
   --lcd-fg: #e9e6df;
 
@@ -166,6 +167,25 @@ main { position: relative; z-index: 2; }
 .cursor__label { color: #121212; font-size: 10px; opacity: 0; transition: opacity 0.2s; }
 .cursor[data-mode='label'] .cursor__label { opacity: 1; }
 
+/* ── Chapter colours ─────────────────────────────────────
+   Hero and Rover sit over the WebGL canvas, so they take the page-wide
+   tween. Every other chapter paints its own block, so the colour holds
+   right to its edges, however short the chapter.
+   Keep these in step with THEMES in lib/motion.js. */
+[data-theme='tangelo'] { --bg: rgb(235, 70, 0); --fg: rgb(255, 255, 235); --mute: rgb(255, 208, 170); --panel: rgb(222, 60, 0); --signal: rgb(34, 34, 32); }
+[data-theme='powder'] { --bg: rgb(255, 255, 235); --fg: rgb(34, 34, 32); --mute: rgb(128, 126, 108); --panel: rgb(246, 245, 222); --signal: rgb(235, 70, 0); }
+[data-theme='ash'] { --bg: rgb(162, 194, 190); --fg: rgb(22, 34, 32); --mute: rgb(56, 84, 80); --panel: rgb(150, 183, 179); --signal: rgb(235, 70, 0); }
+[data-theme='lime'] { --bg: rgb(216, 232, 98); --fg: rgb(30, 32, 20); --mute: rgb(86, 96, 40); --panel: rgb(204, 222, 84); --signal: rgb(34, 34, 32); }
+[data-theme='charcoal'] { --bg: rgb(50, 50, 50); --fg: rgb(235, 235, 223); --mute: rgb(150, 150, 140); --panel: rgb(62, 62, 61); --signal: rgb(233, 99, 26); }
+:is([data-theme='tangelo'], [data-theme='powder'], [data-theme='ash'], [data-theme='lime'], [data-theme='charcoal']) {
+  --line: color-mix(in srgb, var(--fg) 16%, transparent);
+  --line-strong: color-mix(in srgb, var(--fg) 36%, transparent);
+  background: var(--bg);
+  color: var(--fg);
+}
+/* Contact's dark sheet rises over the previous chapter's colour */
+.ct[data-theme] { background: none; }
+
 /* ── Nav: a signal-orange rail with bold ink type ──────── */
 .nav {
   --ink: #121212;
@@ -178,9 +198,10 @@ main { position: relative; z-index: 2; }
   column-gap: var(--gap);
   align-items: center;
   padding-inline: var(--m);
-  background: var(--signal);
+  background: var(--brand);
   color: var(--ink);
 }
+.nav .mark__bar { stroke: var(--brand); }
 .nav .mono { font-weight: 700; letter-spacing: 0.07em; }
 .nav__brand { grid-column: 1 / 4; display: flex; gap: 10px; align-items: center; font-size: 15px; font-weight: 700; letter-spacing: -0.025em; white-space: nowrap; }
 /* HB logo: monogram + a name that folds into it */
@@ -201,12 +222,12 @@ main { position: relative; z-index: 2; }
 .logo__ch > span::after { content: attr(data-ch); position: absolute; left: 0; top: 100%; }
 .nav__brand:hover .logo__ch > span { translate: 0 -100%; }
 .nav__chapter { grid-column: 4 / 7; display: flex; align-items: center; gap: 8px; font-size: 12px; }
-.nav__num { min-width: 2.6em; padding: 4px 6px; border-radius: 5px; background: var(--ink); color: var(--signal); text-align: center; }
+.nav__num { min-width: 2.6em; padding: 4px 6px; border-radius: 5px; background: var(--ink); color: var(--brand); text-align: center; }
 .nav__sep { opacity: 0.4; }
 .nav__links { grid-column: 7 / 10; display: flex; gap: 4px; }
 .nav__links a { padding: 8px 12px; border-radius: 7px; font-size: 12px; transition: background-color 0.3s var(--ease), color 0.3s var(--ease); }
 .nav__links a:hover { background: rgba(18, 18, 18, 0.12); }
-.nav__links a.is-active { background: var(--ink); color: var(--signal); }
+.nav__links a.is-active { background: var(--ink); color: var(--brand); }
 .nav__right { grid-column: 10 / 13; display: flex; justify-content: flex-end; align-items: center; gap: 22px; font-size: 12px; }
 .nav__sound { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; }
 .nav__sound-bars { display: inline-flex; gap: 2px; align-items: flex-end; height: 11px; }
@@ -215,7 +236,7 @@ main { position: relative; z-index: 2; }
 .nav__sound[aria-pressed='true'] .nav__sound-bars i:nth-child(2) { animation-delay: -0.3s; }
 .nav__sound[aria-pressed='true'] .nav__sound-bars i:nth-child(3) { animation-delay: -0.6s; }
 @keyframes eq { from { height: 2px; } to { height: 11px; } }
-.nav__progress { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: rgba(18, 18, 18, 0.16); }
+.nav__progress { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: rgba(18, 18, 18, 0.26); }
 .nav__progress i { display: block; height: 100%; background: var(--ink); transform-origin: 0 50%; transform: scaleX(0); }
 
 /* Mobile menu */
@@ -740,12 +761,13 @@ main { position: relative; z-index: 2; }
 /* ── 07 Contact ────────────────────────────────────────── */
 .ct { position: relative; }
 .ct__sheet {
-  --bg: #10100f;
-  --fg: #eceae4;
-  --mute: #7a7872;
-  --panel: #1e1e1c;
-  --line: rgba(236, 234, 228, 0.14);
-  --line-strong: rgba(236, 234, 228, 0.32);
+  --bg: #323232;
+  --fg: #ebebdf;
+  --mute: #96968c;
+  --panel: #3e3e3d;
+  --line: rgba(235, 235, 223, 0.16);
+  --line-strong: rgba(235, 235, 223, 0.36);
+  --signal: #e9631a;
   background: var(--bg);
   color: var(--fg);
   min-height: 100vh;
@@ -795,7 +817,7 @@ main { position: relative; z-index: 2; }
   :root { --nav-h: 48px; }
   .nav__brand { grid-column: 1 / 7; }
   .nav__chapter { grid-column: 7 / 11; justify-content: flex-end; }
-  .nav__menu { display: block; grid-column: 11 / 13; justify-self: end; padding: 7px 12px; border-radius: 7px; background: var(--ink); color: var(--signal); font-size: 11px; }
+  .nav__menu { display: block; grid-column: 11 / 13; justify-self: end; padding: 7px 12px; border-radius: 7px; background: var(--ink); color: var(--brand); font-size: 11px; }
   .nav__links, .nav__right { display: none; }
 
   .hero__meta .c1, .hero__meta .c2 { grid-column: span 6; }

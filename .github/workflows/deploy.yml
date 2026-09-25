@@ -37,6 +37,21 @@ jobs:
       - name: Build
         run: npm run build
 
+      # the previous design stays live at /v1/ as a backup
+      - name: Checkout backup (v1)
+        uses: actions/checkout@v4
+        with:
+          ref: backup/v1-mono
+          path: v1src
+
+      - name: Build backup (v1)
+        working-directory: v1src
+        run: |
+          npm ci
+          npm run build
+          rm -f dist/sw.js
+          cp -r dist ../dist/v1
+
       - name: Setup Pages
         uses: actions/configure-pages@v4
 

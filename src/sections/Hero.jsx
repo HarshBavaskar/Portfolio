@@ -63,7 +63,7 @@ export default function Hero({ ready }) {
   }, []);
 
   return (
-    <section id="top" className="hero" ref={root} data-chapter data-theme="light">
+    <section id="top" className="hero" ref={root} data-chapter data-theme="parchment">
       <div className="hero__meta wrap grid mono">
         <p data-in className="c1"><span className="dim">(Portfolio)</span><br />Edition 2026</p>
         <p data-in className="c2"><span className="dim">Practice</span><br />Robotics, embedded<br />systems, computer vision</p>

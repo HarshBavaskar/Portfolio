@@ -143,6 +143,10 @@ main { position: relative; z-index: 2; }
 .pre__cell.is-on { background: var(--fg); }
 .pre__cell.is-on:nth-child(6n) { background: var(--signal); }
 
+/* the monogram, drawn large while loading, then flown into the nav */
+.pre-mark { position: fixed; left: 50%; top: 44%; z-index: 101; width: min(52vw, 360px); translate: -50% -50%; color: var(--fg); pointer-events: none; }
+.pre-mark .mark { width: 100%; height: auto; }
+
 /* ── Cursor ────────────────────────────────────────────── */
 .cursor {
   position: fixed;
@@ -179,9 +183,14 @@ main { position: relative; z-index: 2; }
 .nav__brand { grid-column: 1 / 4; display: flex; gap: 10px; align-items: center; font-size: 14px; font-weight: 500; letter-spacing: -0.01em; white-space: nowrap; }
 /* HB logo: monogram + a name that folds into it */
 .logo { display: inline-flex; align-items: center; gap: 10px; }
-.logo__mark { flex: none; width: 28px; height: 28px; overflow: visible; }
-.logo__ink { fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: square; stroke-linejoin: miter; stroke-dasharray: 1; }
-.logo__bar { fill: none; stroke: var(--signal); stroke-width: 3.4; stroke-linecap: square; }
+.mark { display: block; overflow: visible; }
+.mark__frame { fill: none; stroke: none; }
+.mark__ink { fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: square; stroke-linejoin: miter; stroke-dasharray: 1; }
+.mark__bar { fill: none; stroke: var(--signal); stroke-width: 3.4; stroke-linecap: square; }
+.mark__guide { fill: none; stroke: var(--mute); stroke-width: 0.18; stroke-dasharray: 1; opacity: 0.9; }
+.mark__tick { stroke-width: 0.25; }
+.mark__note { fill: var(--mute); font-family: var(--fm); font-size: 1.5px; letter-spacing: 0.08em; }
+.logo__mark { flex: none; width: 28px; height: 28px; will-change: transform; }
 .logo__word { display: inline-flex; overflow: hidden; white-space: nowrap; }
 .logo__ch { display: inline-block; overflow: hidden; line-height: 1.25; }
 .logo__ch > span { position: relative; display: block; transition: translate 0.5s var(--ease); transition-delay: calc(var(--i) * 16ms); }

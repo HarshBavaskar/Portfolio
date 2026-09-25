@@ -3,7 +3,7 @@ export const links = {
   github: 'https://github.com/HarshBavaskar',
   linkedin: 'https://linkedin.com/in/harsh-bavaskar',
   // shown on the contact card and in its vCard when set, e.g. '+91 98765 43210'
-  phone: '',
+  phone: '+91 92846 25970',
 };
 
 export const early = [

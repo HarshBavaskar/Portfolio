@@ -10,7 +10,12 @@
   --line: rgba(34, 34, 32, 0.16);
   --line-strong: rgba(34, 34, 32, 0.36);
   --signal: rgb(235, 70, 0); /* the accent: follows each chapter's colour */
-  --brand: #ff5b14; /* the top rail: always this orange */
+  --brand: #ff5b14; /* the brand orange: highlights on the rail */
+  /* the top rail's own colours, tweened per chapter (RAILS in lib/motion.js) */
+  --nav-bg: rgb(255, 91, 20);
+  --nav-fg: rgb(18, 18, 18);
+  --nav-key: rgb(18, 18, 18);
+  --nav-key-fg: rgb(235, 235, 223);
   --lcd: #141413;
   --lcd-fg: #e9e6df;
 
@@ -186,9 +191,8 @@ main { position: relative; z-index: 2; }
 /* Contact's dark sheet rises over the previous chapter's colour */
 .ct[data-theme] { background: none; }
 
-/* ── Nav: a signal-orange rail with bold ink type ──────── */
+/* ── Nav: a coloured rail with bold type; it partners each chapter ── */
 .nav {
-  --ink: #121212;
   position: fixed;
   top: 0; left: 0; right: 0;
   z-index: 50;
@@ -198,8 +202,8 @@ main { position: relative; z-index: 2; }
   column-gap: var(--gap);
   align-items: center;
   padding-inline: var(--m);
-  background: var(--brand);
-  color: var(--ink);
+  background: var(--nav-bg);
+  color: var(--nav-fg);
 }
 .nav .mark__bar { stroke: var(--brand); }
 .nav .mono { font-weight: 700; letter-spacing: 0.07em; }
@@ -215,19 +219,19 @@ main { position: relative; z-index: 2; }
 .mark__note { fill: var(--mute); font-family: var(--fm); font-size: 1.5px; letter-spacing: 0.08em; }
 .logo__mark { flex: none; width: 28px; height: 28px; will-change: transform; }
 /* on the orange rail the mark sits on an ink key, as on the app icon */
-.nav .logo__mark { width: 34px; height: 34px; padding: 6px; border-radius: 8px; background: var(--ink); color: #eeece7; }
+.nav .logo__mark { width: 34px; height: 34px; padding: 6px; border-radius: 8px; background: var(--nav-key); color: var(--nav-key-fg); }
 .logo__word { display: inline-flex; overflow: hidden; white-space: nowrap; }
 .logo__ch { display: inline-block; overflow: hidden; line-height: 1.25; }
 .logo__ch > span { position: relative; display: block; transition: translate 0.5s var(--ease); transition-delay: calc(var(--i) * 16ms); }
 .logo__ch > span::after { content: attr(data-ch); position: absolute; left: 0; top: 100%; }
 .nav__brand:hover .logo__ch > span { translate: 0 -100%; }
 .nav__chapter { grid-column: 4 / 7; display: flex; align-items: center; gap: 8px; font-size: 12px; }
-.nav__num { min-width: 2.6em; padding: 4px 6px; border-radius: 5px; background: var(--ink); color: var(--brand); text-align: center; }
+.nav__num { min-width: 2.6em; padding: 4px 6px; border-radius: 5px; background: var(--nav-key); color: var(--brand); text-align: center; }
 .nav__sep { opacity: 0.4; }
 .nav__links { grid-column: 7 / 10; display: flex; gap: 4px; }
 .nav__links a { padding: 8px 12px; border-radius: 7px; font-size: 12px; transition: background-color 0.3s var(--ease), color 0.3s var(--ease); }
-.nav__links a:hover { background: rgba(18, 18, 18, 0.12); }
-.nav__links a.is-active { background: var(--ink); color: var(--brand); }
+.nav__links a:hover { background: color-mix(in srgb, var(--nav-fg) 14%, transparent); }
+.nav__links a.is-active { background: var(--nav-key); color: var(--brand); }
 .nav__right { grid-column: 10 / 13; display: flex; justify-content: flex-end; align-items: center; gap: 22px; font-size: 12px; }
 .nav__sound { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; }
 .nav__sound-bars { display: inline-flex; gap: 2px; align-items: flex-end; height: 11px; }
@@ -236,8 +240,8 @@ main { position: relative; z-index: 2; }
 .nav__sound[aria-pressed='true'] .nav__sound-bars i:nth-child(2) { animation-delay: -0.3s; }
 .nav__sound[aria-pressed='true'] .nav__sound-bars i:nth-child(3) { animation-delay: -0.6s; }
 @keyframes eq { from { height: 2px; } to { height: 11px; } }
-.nav__progress { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: rgba(18, 18, 18, 0.26); }
-.nav__progress i { display: block; height: 100%; background: var(--ink); transform-origin: 0 50%; transform: scaleX(0); }
+.nav__progress { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: color-mix(in srgb, var(--nav-fg) 26%, transparent); }
+.nav__progress i { display: block; height: 100%; background: var(--nav-fg); transform-origin: 0 50%; transform: scaleX(0); }
 
 /* Mobile menu */
 .nav__menu { display: none; }
@@ -817,7 +821,7 @@ main { position: relative; z-index: 2; }
   :root { --nav-h: 48px; }
   .nav__brand { grid-column: 1 / 7; }
   .nav__chapter { grid-column: 7 / 11; justify-content: flex-end; }
-  .nav__menu { display: block; grid-column: 11 / 13; justify-self: end; padding: 7px 12px; border-radius: 7px; background: var(--ink); color: var(--brand); font-size: 11px; }
+  .nav__menu { display: block; grid-column: 11 / 13; justify-self: end; padding: 7px 12px; border-radius: 7px; background: var(--nav-key); color: var(--brand); font-size: 11px; }
   .nav__links, .nav__right { display: none; }
 
   .hero__meta .c1, .hero__meta .c2 { grid-column: span 6; }

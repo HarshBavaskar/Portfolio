@@ -46,7 +46,7 @@ export default function App() {
           end: 'bottom 50%',
           onToggle: (self) => {
             if (!self.isActive) return;
-            setTheme(el.dataset.theme);
+            setTheme(el.dataset.theme, el.dataset.rail);
             bus.emit('chapter', i);
           },
         });

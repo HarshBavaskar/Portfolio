@@ -28,7 +28,7 @@ export default function Logo() {
     const land = () => {
       if (landed) return;
       landed = true;
-      gsap.fromTo(mark, { autoAlpha: 1, scale: 0.6 }, { scale: 1, duration: 0.7, ease: 'back.out(2.2)' });
+      gsap.set(mark, { autoAlpha: 1 });
       gsap.to(chars, { yPercent: 0, x: 0, duration: 0.9, stagger: 0.022, ease: 'expo.out', delay: 0.05 });
     };
     const offLanded = bus.on('logo:landed', land);

@@ -74,8 +74,8 @@ function applyTheme() {
 export function setTheme(dark) {
   gsap.to(theme, {
     t: dark ? 1 : 0,
-    duration: touch ? 0.4 : 0.9,
-    ease: touch ? 'steps(4)' : 'power2.inOut',
+    duration: touch ? 0.24 : 0.9,
+    ease: touch ? 'steps(2)' : 'power2.inOut',
     overwrite: true,
     onUpdate: applyTheme,
   });

@@ -2,6 +2,8 @@ import { useEffect, useLayoutEffect, useState } from 'react';
 import { gsap, ScrollTrigger, SplitText, initScroll, setTheme, bus, lockScroll, scrollTo } from './lib/motion';
 import Preloader from './components/Preloader';
 import { wipeArrive } from './early/wipe';
+import { preloadImages } from './lib/preload';
+import { projects } from './data';
 import Cursor from './components/Cursor';
 import Nav from './components/Nav';
 import GLStage from './components/GLStage';
@@ -13,6 +15,9 @@ import Work from './sections/Work';
 import Toolkit from './sections/Toolkit';
 import Record from './sections/Record';
 import Contact from './sections/Contact';
+
+// start fetching and decoding every still while the preloader draws
+preloadImages(projects);
 
 export default function App() {
   const [ready, setReady] = useState(false);

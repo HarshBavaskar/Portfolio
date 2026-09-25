@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { gsap } from '../lib/motion';
+import { gsap, bus } from '../lib/motion';
 import { click } from '../lib/sound';
 import Screen from './Screen';
 
@@ -10,17 +10,18 @@ const url = (p) => `${import.meta.env.BASE_URL}${p}`;
 export default function TabScreen({ items, auto = 0, tone = 'light', name }) {
   const [i, setI] = useState(0);
   const [inView, setInView] = useState(false);
-  const [near, setNear] = useState(false); // posters wait until the card is close
   const root = useRef(null);
   const paused = useRef(false);
 
   useEffect(() => {
-    const io = new IntersectionObserver(([e]) => {
-      setInView(e.isIntersecting);
-      if (e.isIntersecting) setNear(true);
-    }, { rootMargin: '400px' });
+    const io = new IntersectionObserver(([e]) => setInView(e.isIntersecting), { rootMargin: '400px' });
     io.observe(root.current);
-    return () => io.disconnect();
+    // once the page is up, buffer the videos in the background so a tab opens instantly
+    const off = bus.on('ready', () => root.current?.querySelectorAll('video').forEach((v) => {
+      v.preload = 'auto';
+      if (!v.getAttribute('src')) v.src = v.dataset.src;
+    }));
+    return () => { io.disconnect(); off(); };
   }, []);
 
   useEffect(() => {
@@ -48,13 +49,13 @@ export default function TabScreen({ items, auto = 0, tone = 'light', name }) {
         {items.map((it, k) => (
           <div className="tabs__pane" key={it.label} style={{ visibility: k === 0 ? 'inherit' : 'hidden' }}>
             {it.type === 'img' && (
-              <img className={`tabs__media${it.fit === 'contain' ? ' is-contain' : ''}`} src={url(it.src)} alt={`${name} — ${it.label}`} width="1440" height="900" loading="lazy" decoding="async" />
+              <img className={`tabs__media${it.fit === 'contain' ? ' is-contain' : ''}`} src={url(it.src)} alt={`${name} — ${it.label}`} width="1440" height="900" decoding="async" />
             )}
             {it.type === 'video' && (
               <video
                 className={`tabs__media${it.phone ? ' is-phone' : ''}`}
                 data-src={url(it.src)}
-                poster={near ? url(it.poster) : undefined}
+                poster={url(it.poster)}
                 muted
                 loop
                 playsInline

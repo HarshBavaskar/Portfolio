@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef } from 'react';
 import { gsap, reduced, bus } from '../lib/motion';
 import Mark from './Mark';
+import { loader } from '../lib/preload';
 
 const CELLS = 24;
 
@@ -45,23 +46,33 @@ export default function Preloader({ onDone }) {
         });
       };
 
+      // the counter never runs ahead of what has actually loaded
+      const shown = { v: 0 };
+      let painted = -1;
+      const paint = () => {
+        const target = Math.min(n.v, 100 * loader.progress);
+        shown.v += (target - shown.v) * 0.2;
+        if (Math.abs(target - shown.v) < 0.4) shown.v = target;
+        const v = Math.round(shown.v);
+        if (v === painted) return;
+        painted = v;
+        count.current.textContent = String(v).padStart(3, '0');
+        const lit = Math.round((v / 100) * CELLS);
+        cells.forEach((c, i) => c.classList.toggle('is-on', i < lit));
+      };
+      gsap.ticker.add(paint);
+
       const tl = gsap.timeline({ paused: true });
-      tl.to(n, {
-        v: 100,
-        duration: count_,
-        ease: 'power3.inOut',
-        onUpdate: () => {
-          const v = Math.round(n.v);
-          count.current.textContent = String(v).padStart(3, '0');
-          const lit = Math.round((v / 100) * CELLS);
-          cells.forEach((c, i) => c.classList.toggle('is-on', i < lit));
-        },
-      })
+      tl.to(n, { v: 100, duration: count_, ease: 'power3.inOut' })
         // drafting: construction lines first, then the strokes trace over them
         .to(guides, { strokeDashoffset: 0, duration: count_ * 0.45, stagger: count_ * 0.03, ease: 'power2.inOut' }, 0)
         .to(notes, { autoAlpha: 1, duration: 0.3, stagger: 0.1 }, count_ * 0.3)
         .to(ink, { strokeDashoffset: 0, duration: count_ * 0.45, stagger: count_ * 0.1, ease: 'power3.inOut' }, count_ * 0.25)
         .to(bar, { scaleX: 1, duration: 0.5, ease: 'expo.out' }, count_ * 0.9)
+        // hold here until everything is in, then let the counter land on 100
+        .addPause('+=0', () => loader.ready().then(() => {
+          gsap.delayedCall(0.4, () => { gsap.ticker.remove(paint); count.current.textContent = '100'; cells.forEach((c) => c.classList.add('is-on')); tl.play(); });
+        }))
         .to([...guides, ...notes], { autoAlpha: 0, duration: 0.35 }, '+=0.12')
         .to('.pre__row > *', { yPercent: -120, duration: 0.7, ease: 'power3.in', stagger: 0.03 }, '<')
         .add(fly, '-=0.35')
@@ -71,6 +82,7 @@ export default function Preloader({ onDone }) {
 
       // wait for type so nothing reflows after the reveal
       Promise.race([document.fonts.ready, new Promise((r) => setTimeout(r, 2500))]).then(() => tl.play());
+      return () => gsap.ticker.remove(paint);
     }, root);
     return () => ctx.revert();
     // eslint-disable-next-line react-hooks/exhaustive-deps

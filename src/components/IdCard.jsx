@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { gsap, ScrollTrigger, reduced } from '../lib/motion';
 import { click } from '../lib/sound';
 import { CARD, buildVCard, deliver, download } from '../lib/card';
+import { loader } from '../lib/preload';
 
 /*
   The contact card as a real, rendered circuit board. Tap to turn it over,
@@ -16,13 +17,21 @@ export default function IdCard() {
   useEffect(() => {
     let dead = false, st;
     const proxy = { v: reduced ? 1 : 0 };
-    const load = new IntersectionObserver(async ([e]) => {
-      if (!e.isIntersecting) return;
-      load.disconnect();
-      const { createPcbCard } = await import('../gl/pcbcard');
+    // built, compiled and uploaded under the preloader, not when it scrolls into view
+    (async () => {
+      let card;
+      try {
+        const { createPcbCard } = await import('../gl/pcbcard');
+        if (dead) return;
+        card = await createPcbCard(canvas.current, { still: reduced });
+      } catch {
+        loader.done('card'); // no WebGL: the links still work
+        return;
+      } finally {
+        if (dead) card?.dispose();
+      }
       if (dead) return;
-      const card = await createPcbCard(canvas.current, { still: reduced });
-      if (dead) { card.dispose(); return; }
+      loader.done('card');
       api.current = card;
       card.setEnter(proxy.v);
       root.current.classList.add('is-ready');
@@ -32,11 +41,9 @@ export default function IdCard() {
           onEnter: () => gsap.to(proxy, { v: 1, duration: 2, ease: 'expo.out', onUpdate: () => card.setEnter(proxy.v) }),
         });
       }
-    }, { rootMargin: '600px 0px' });
-    load.observe(root.current);
+    })();
     return () => {
       dead = true;
-      load.disconnect();
       st?.kill();
       gsap.killTweensOf(proxy);
       api.current?.dispose();

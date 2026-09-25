@@ -56,7 +56,6 @@ export default function Contact() {
         <footer className="ft wrap mono">
           <span>© 2026 Harsh Bavaskar</span>
           <span className="dim">Mumbai · <Clock /></span>
-          <span className="dim ft__hint">Press G for the grid</span>
           <button type="button" className="ulink" onClick={() => scrollTo('#top')}>Back to top ↑</button>
         </footer>
       </div>

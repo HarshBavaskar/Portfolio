@@ -253,11 +253,6 @@ main { position: relative; z-index: 2; }
 .menu__early a { font-size: 11px; letter-spacing: 0.06em; padding: 6px 0; border: 0; color: var(--signal); transform: none; }
 .menu.is-open .menu__early { opacity: 1; }
 
-/* ── Grid overlay (press G) ────────────────────────────── */
-.gridlay { position: fixed; inset: 0; z-index: 80; pointer-events: none; opacity: 0; transition: opacity 0.3s; }
-.gridlay.is-on { opacity: 1; }
-.gridlay .grid { height: 100%; }
-.gridlay i { background: rgba(255, 91, 20, 0.06); border-inline: 1px solid rgba(255, 91, 20, 0.28); }
 
 /* ── Hero ──────────────────────────────────────────────── */
 .hero { position: relative; min-height: 100svh; display: flex; flex-direction: column; padding-top: var(--nav-h); }
@@ -830,7 +825,6 @@ main { position: relative; z-index: 2; }
   .rc__v, .rc__d { grid-column: 1 / -1; }
   .rc__k { grid-row: 1; }
   .rc__y { grid-row: 1; grid-column: 2; }
-  .ft__hint { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {

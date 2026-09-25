@@ -69,7 +69,7 @@ export default function Toolkit() {
   // type on your own keyboard to press keys here
   useEffect(() => {
     const onKey = (e) => {
-      if (e.metaKey || e.ctrlKey || e.altKey || e.key.length !== 1 || e.key.toLowerCase() === 'g') return;
+      if (e.metaKey || e.ctrlKey || e.altKey || e.key.length !== 1) return;
       const r = root.current.getBoundingClientRect();
       if (r.bottom < 0 || r.top > innerHeight) return;
       const ch = e.key.toLowerCase();

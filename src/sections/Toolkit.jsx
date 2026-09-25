@@ -102,7 +102,7 @@ export default function Toolkit() {
   return (
     <section id="toolkit" className="tk" ref={root} data-chapter data-theme="charcoal">
       <div className="wrap">
-        <div className="sec-head mono"><span>05 / Toolkit</span><span className="dim">{compact ? 'Tap a bank, then a key' : 'Hover, click, or type on your keyboard'}</span></div>
+        <div className="sec-head mono"><span>05 / Toolkit</span><span className="dim">{compact ? 'Tap a bank, tap again or touch the list' : 'Hover, click, or type on your keyboard'}</span></div>
         <h2 className="tk__title" data-reveal="lines">Every layer of the stack, from torque to TypeScript.</h2>
         {fallback ? (
           <Board sel={sel} pick={pick} />

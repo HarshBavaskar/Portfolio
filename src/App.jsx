@@ -6,6 +6,7 @@ import { preloadImages } from './lib/preload';
 import { projects } from './data';
 import Cursor from './components/Cursor';
 import Nav from './components/Nav';
+import ScrollBar from './components/ScrollBar';
 import GLStage from './components/GLStage';
 import Hero from './sections/Hero';
 import Rover from './sections/Rover';
@@ -87,6 +88,7 @@ export default function App() {
       <Preloader onDone={() => setReady(true)} />
       <Cursor />
       <Nav />
+      <ScrollBar />
       <GLStage />
       <main>
         <Hero ready={ready} />

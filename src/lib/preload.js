@@ -63,4 +63,5 @@ export function preloadImages(projects) {
 // fixed jobs, declared before anything mounts
 loader.expect('rover', 3);
 loader.expect('card', 4);
+loader.expect('toolkit', 3);
 loader.track('fonts', document.fonts?.ready, 1);

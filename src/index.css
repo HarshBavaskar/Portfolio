@@ -770,6 +770,69 @@ main { position: relative; z-index: 2; }
 .ft { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-top: auto; padding-block: 24px; border-top: 1px solid var(--line); }
 .ct__sheet .wrap:first-child { padding-bottom: clamp(80px, 14vh, 160px); }
 
+
+/* ── Take-away metal card ── */
+.mc { display: grid; grid-template-columns: 5fr 7fr; gap: clamp(28px, 5vw, 80px); align-items: center; margin-top: clamp(80px, 14vh, 150px); padding-top: clamp(40px, 6vh, 64px); border-top: 1px solid var(--line); }
+.mc__title { margin-top: 12px; font-size: clamp(30px, 3.6vw, 56px); font-weight: 600; letter-spacing: -0.05em; line-height: 1; }
+.mc__text { margin-top: 16px; max-width: 40ch; color: var(--mute); font-size: 16px; }
+.mc__actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px; }
+.btn--inv { background: var(--fg); color: var(--bg); }
+.mc__hint { margin-top: 18px; }
+.mc__stage { position: relative; perspective: 1400px; display: grid; place-items: center; padding: 40px 0 70px; touch-action: pan-y; }
+.mc__float, .mc__tilt, .mc__flip { transform-style: preserve-3d; }
+.mc__float { width: min(480px, 86vw); }
+.mc__flip { position: relative; aspect-ratio: 1.586; }
+.mc__shadow {
+  position: absolute; left: 18%; right: 18%; bottom: 22px; height: 46px; border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0.25) 60%, transparent);
+  filter: blur(14px);
+}
+.mc__face {
+  --engrave: rgba(38, 40, 44, 0.88);
+  position: absolute; inset: 0; overflow: hidden; border-radius: 18px;
+  backface-visibility: hidden; -webkit-backface-visibility: hidden;
+  color: var(--engrave);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.75),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.18),
+    0 1px 0 #a9acb1, 0 2px 0 #9c9fa4, 0 3px 0 #8d9095,
+    0 26px 40px -16px rgba(0, 0, 0, 0.7);
+}
+.mc__back { transform: rotateY(180deg); }
+.mc__metal {
+  position: absolute; inset: 0;
+  background:
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.16) 0 1px, rgba(40, 42, 46, 0.035) 1px 2px, transparent 2px 3px),
+    linear-gradient(135deg, #cdd0d4 0%, #eceef0 44%, #e2e4e7 56%, #c1c4c8 100%);
+}
+.mc__sheen {
+  position: absolute; inset: 0; pointer-events: none; mix-blend-mode: overlay;
+  background:
+    linear-gradient(105deg, transparent calc(var(--band) - 16%), rgba(255, 255, 255, 0.85) var(--band), transparent calc(var(--band) + 16%)),
+    radial-gradient(420px circle at var(--mx, 30%) var(--my, 20%), rgba(255, 255, 255, 0.6), transparent 55%);
+}
+.mc__stage { --band: 30%; }
+.mc__face > :not(.mc__metal):not(.mc__sheen) { position: relative; }
+.mc__face .mono { text-shadow: 0 1px 0 rgba(255, 255, 255, 0.75); }
+.mc__mark { position: absolute !important; left: 7%; top: 11%; width: 15%; height: auto; color: var(--engrave); filter: drop-shadow(0 1.2px 0 rgba(255, 255, 255, 0.8)); }
+.mc__name { position: absolute !important; left: 7%; right: 7%; bottom: 25%; display: grid; gap: 6px; }
+.mc__name b { font-size: clamp(22px, 5.4vw, 34px); font-weight: 600; letter-spacing: -0.045em; line-height: 1; text-shadow: 0 1.2px 0 rgba(255, 255, 255, 0.8), 0 -0.5px 0 rgba(0, 0, 0, 0.2); }
+.mc__name .mono { font-size: clamp(7.5px, 1.7vw, 10px); }
+.mc__inlay { display: block; width: 26%; height: 3px; margin-top: 6px; border-radius: 1px; background: linear-gradient(180deg, #ff8a4f, #e8490a); box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.25), 0 1px 0 rgba(255, 255, 255, 0.7); }
+.mc__foot { position: absolute !important; left: 7%; right: 7%; bottom: 8%; display: flex; justify-content: space-between; font-size: clamp(7px, 1.6vw, 9.5px); }
+.mc__label { position: absolute !important; left: 7%; top: 10%; font-size: clamp(7.5px, 1.6vw, 9.5px); }
+.mc__rows { position: absolute !important; left: 7%; top: 24%; width: 52%; display: grid; gap: 7%; }
+.mc__rows div { display: grid; gap: 1px; }
+.mc__rows dt { font-size: clamp(7px, 1.5vw, 9px); font-weight: 600; text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6); }
+.mc__rows dd { font-size: clamp(10px, 2.3vw, 14px); font-weight: 500; letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 1px 0 rgba(255, 255, 255, 0.75); }
+.mc__qr { position: absolute !important; right: 7%; top: 22%; width: 27%; display: grid; gap: 8px; justify-items: center; }
+.mc__qr svg { width: 100%; height: auto; fill: var(--engrave); filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.8)); }
+.mc__qr figcaption { font-size: clamp(5.5px, 1.2vw, 7.5px); text-align: center; }
+@media (max-width: 899px) {
+  .mc { grid-template-columns: 1fr; }
+  .mc__stage { padding: 20px 0 60px; }
+}
+
 /* ── Small screens ─────────────────────────────────────── */
 @media (max-width: 899px) {
   :root { --nav-h: 48px; }

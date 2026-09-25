@@ -12,11 +12,13 @@ export default function Nav() {
   const bar = useRef(null);
   const [soundOn, setSoundOn] = useState(false);
   const [open, setOpen] = useState(false);
+  const [active, setActive] = useState('top');
 
   useEffect(() => {
     const off = bus.on('chapter', (i) => {
       const c = chapters[i];
       if (!c) return;
+      setActive(c.id);
       gsap.to(num.current, { duration: 0.6, scrambleText: { text: c.n, chars: '0123456789', speed: 0.6 } });
       gsap.to(title.current, { duration: 0.8, scrambleText: { text: c.title, chars: 'upperCase', speed: 0.5 } });
     });
@@ -42,14 +44,14 @@ export default function Nav() {
         <Logo />
       </a>
       <div className="nav__chapter mono" aria-live="polite">
-        <span ref={num}>00</span>
+        <span className="nav__num" ref={num}>00</span>
         <span className="nav__sep">/</span>
         <span ref={title}>Index</span>
       </div>
       <nav className="nav__links mono" aria-label="Sections">
-        <a href="#work" onClick={go('work')}>Work</a>
-        <a href="#path" onClick={go('path')}>Path</a>
-        <a href="#contact" onClick={go('contact')}>Contact</a>
+        {[['work', 'Work'], ['path', 'Path'], ['contact', 'Contact']].map(([id, label]) => (
+          <a key={id} href={`#${id}`} onClick={go(id)} className={active === id ? 'is-active' : undefined} aria-current={active === id ? 'true' : undefined}>{label}</a>
+        ))}
       </nav>
       <div className="nav__right mono">
         <button type="button" className="nav__sound" aria-pressed={soundOn} onClick={() => setSoundOn(toggleSound())}>

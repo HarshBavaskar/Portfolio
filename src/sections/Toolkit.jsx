@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { gsap } from '../lib/motion';
+import { gsap, finePointer, isDesktop } from '../lib/motion';
 import { click } from '../lib/sound';
 import { toolkit } from '../data';
 
@@ -13,15 +13,45 @@ export default function Toolkit() {
 
   useLayoutEffect(() => {
     const ctx = gsap.context(() => {
-      gsap.fromTo('.tk__board', { rotateX: 32, y: 80, transformPerspective: 1600 }, {
-        rotateX: 0, y: 0, ease: 'none',
-        scrollTrigger: { trigger: '.tk__board', start: 'top bottom', end: 'center 60%', scrub: true },
+      const board = root.current.querySelector('.tk__board');
+      const desk = isDesktop();
+      const rest = desk ? 20 : 3; // a tall phone board keystones badly, so it lies nearly flat
+      // it rises off the desk and settles tilted back, like hardware on a table
+      gsap.fromTo('.tk__rig', { rotationX: desk ? 52 : 22, y: desk ? 140 : 60 }, {
+        rotationX: rest,
+        y: 0,
+        ease: 'none',
+        scrollTrigger: { trigger: '.tk__stage', start: 'top bottom', end: 'center 62%', scrub: true },
       });
-      gsap.from('.tk__key', {
-        y: -14, autoAlpha: 0, duration: 0.8, ease: 'back.out(2)',
-        stagger: { each: 0.012, from: 'start' },
-        scrollTrigger: { trigger: '.tk__board', start: 'top 70%' },
+      gsap.from('.tk__key, .tk__cat', {
+        y: -16,
+        autoAlpha: 0,
+        duration: 0.8,
+        ease: 'back.out(2)',
+        stagger: { each: 0.01, from: 'start' },
+        clearProps: 'transform,opacity,visibility',
+        scrollTrigger: { trigger: '.tk__stage', start: 'top 70%' },
       });
+
+      if (!finePointer) return;
+      // the board follows the pointer a few degrees; a highlight slides over it
+      const ry = gsap.quickTo(board, 'rotationY', { duration: 0.8, ease: 'power3' });
+      const rx = gsap.quickTo(board, 'rotationX', { duration: 0.8, ease: 'power3' });
+      const move = (e) => {
+        const r = board.getBoundingClientRect();
+        const x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height;
+        ry((x - 0.5) * 9);
+        rx(-(y - 0.5) * 6);
+        board.style.setProperty('--mx', `${(x * 100).toFixed(1)}%`);
+        board.style.setProperty('--my', `${(y * 100).toFixed(1)}%`);
+      };
+      const leave = () => { ry(0); rx(0); };
+      board.addEventListener('pointermove', move);
+      board.addEventListener('pointerleave', leave);
+      return () => {
+        board.removeEventListener('pointermove', move);
+        board.removeEventListener('pointerleave', leave);
+      };
     }, root);
     return () => ctx.revert();
   }, []);
@@ -64,7 +94,13 @@ export default function Toolkit() {
         <div className="sec-head mono"><span>05 — Toolkit</span><span className="dim">Hover, click, or type on your keyboard</span></div>
         <h2 className="tk__title" data-reveal="lines">Every layer of the stack, from torque to TypeScript.</h2>
 
+        <div className="tk__stage">
+        <div className="tk__rig">
+        <div className="tk__shadow" aria-hidden="true" />
         <div className="tk__board">
+          <i className="tk__sheen" aria-hidden="true" />
+          <i className="tk__screw tl" aria-hidden="true" /><i className="tk__screw tr" aria-hidden="true" />
+          <i className="tk__screw bl" aria-hidden="true" /><i className="tk__screw br" aria-hidden="true" />
           <div className="tk__lcd">
             <div className="tk__lcd-row mono">
               <span>{String(sel.c + 1).padStart(2, '0')}.{String(sel.i + 1).padStart(2, '0')} — {cur.cat}</span>
@@ -76,6 +112,7 @@ export default function Toolkit() {
             </div>
             <p className="tk__name" ref={name} aria-live="polite">{toolkit[0].keys[0][0]}</p>
             <p className="tk__note mono">{cur.keys[sel.i][1]}</p>
+            <i className="tk__glare" aria-hidden="true" />
           </div>
 
           <div className="tk__keys">
@@ -101,8 +138,10 @@ export default function Toolkit() {
           </div>
           <div className="tk__foot mono dim">
             <span>{flat.length} keys · {toolkit.length} banks</span>
-            <span>HB-05 Toolkit</span>
+            <span><i className="tk__led" aria-hidden="true" />HB-05 Toolkit</span>
           </div>
+        </div>
+        </div>
         </div>
       </div>
     </section>

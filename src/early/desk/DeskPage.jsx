@@ -22,10 +22,10 @@ const ROLES = {
     img: 'home',
     points: [
       'Every deadline, across every subject, on one list.',
-      'Notes sorted by what they are — slides, videos, links and forms.',
+      'Notes sorted by what they are: slides, videos, links and forms.',
       'Study notes written from the professor’s own lecture file.',
       'Exam countdowns and a revision timetable, by day or by subject.',
-      'Doubts to teachers — anonymous if you like — and weekly feedback.',
+      'Doubts to teachers (anonymous if you like) and weekly feedback.',
     ],
   },
   Teacher: {
@@ -210,7 +210,7 @@ function JoinForm({ role, onRole }) {
   const submit = async (e) => {
     e.preventDefault();
     const bad = {};
-    if (!role) bad.role = 'Desk testing is for students and teachers — pick one.';
+    if (!role) bad.role = 'Desk testing is for students and teachers. Pick one.';
     if (!f.name.trim()) bad.name = 'Tell me your name.';
     if (!isEmail(f.email)) bad.email = 'That email doesn’t look right.';
     if (!f.institution.trim()) bad.institution = 'Which college or university?';
@@ -256,7 +256,7 @@ function JoinForm({ role, onRole }) {
             {result?.fallback
               ? 'Your email app should have opened with your details. Send it and your seat is saved.'
               : result?.duplicate
-                ? 'You were already signed up — your seat is saved.'
+                ? 'You were already signed up. Your seat is saved.'
                 : `Thanks, ${firstName(f.name)}. I’ll write to ${f.email.trim()} when your seat in the test opens.`}
           </p>
         </div>
@@ -274,7 +274,7 @@ function JoinForm({ role, onRole }) {
       <Text label="College or university" required value={f.institution} onChange={set('institution')} error={err.institution} placeholder="Atlas Skilltech University" autoComplete="organization" />
       {student && (
         <div className="dk-form__row dk-form__reveal" key="s">
-          <Text label="Course" required value={f.course} onChange={set('course')} error={err.course} placeholder="BTech CS — AI & ML" />
+          <Text label="Course" required value={f.course} onChange={set('course')} error={err.course} placeholder="BTech CS, AI & ML" />
           <Segmented label="Year" options={['1', '2', '3', '4', '5']} value={f.year} onChange={set('year')} error={err.year} required name="year" />
         </div>
       )}
@@ -292,7 +292,7 @@ function JoinForm({ role, onRole }) {
         <span>{status === 'sending' ? 'Saving your seat…' : 'Join the Desk test'}</span>
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
       </button>
-      <p className="dk-form__fine">Only students and teachers are seated. One email when your seat opens — nothing else, never shared.</p>
+      <p className="dk-form__fine">Only students and teachers are seated. One email when your seat opens. Nothing else, never shared.</p>
     </form>
   );
 }

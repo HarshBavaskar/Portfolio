@@ -303,6 +303,11 @@ function frontFace() {
       .forEach(([t, x, y]) => c.fillText(t, X(x), Y(y)));
     c.strokeRect(X(CHIP.x - 0.26), Y(CHIP.y + 0.26), L(0.52), L(0.52));
     c.beginPath(); c.arc(X(CHIP.x - 0.3), Y(CHIP.y + 0.3), L(0.014), 0, Math.PI * 2); c.fill(); // pin 1
+    // the switch gets a courtyard and a hint
+    c.strokeRect(X(BTN.x - 0.12), Y(BTN.y + 0.075), L(0.24), L(0.15));
+    c.font = font(600, L(0.042), true);
+    c.fillText('↑ PRESS HERE', X(BTN.x - 0.12), Y(BTN.y - 0.2));
+    c.font = font(500, L(0.045), true);
     // LED polarity
     c.beginPath(); c.moveTo(X(LED.x + 0.07), Y(LED.y + 0.035)); c.lineTo(X(LED.x + 0.07), Y(LED.y - 0.035)); c.stroke();
     c.font = font(600, L(0.05), true);
@@ -577,7 +582,7 @@ function chipTop() {
 // hand the main thread back between heavy steps, so the preloader keeps animating
 const breathe = () => new Promise((r) => setTimeout(r, 0));
 
-export async function createPcbCard(canvas, { still = false } = {}) {
+export async function createPcbCard(canvas, { still = false, onBoot } = {}) {
   await document.fonts?.ready;
   seed = 11;
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' });
@@ -721,6 +726,10 @@ export async function createPcbCard(canvas, { still = false } = {}) {
   // SW1: a tactile switch, steel frame and a black plunger
   add(rbox(0.15, 0.11, 0.024, 0.004), nickel, BTN.x, BTN.y, 0.012);
   const plunger = add(new THREE.CylinderGeometry(0.03, 0.03, 0.016, 28).rotateX(Math.PI / 2), new THREE.MeshStandardMaterial({ color: '#111', roughness: 0.5 }), BTN.x, BTN.y, 0.032);
+  // an invisible, finger-sized target over the switch
+  const hit = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.26, 0.08), new THREE.MeshBasicMaterial({ visible: false }));
+  hit.position.set(BTN.x, BTN.y, z0 + 0.03);
+  card.add(hit);
   CORNERS.forEach(([sx, sy]) => add(new THREE.BoxGeometry(0.036, 0.018, 0.006), tin, BTN.x + sx * 0.09, BTN.y + sy * 0.04, 0.003));
 
   // D1: a status LED on a white package
@@ -808,8 +817,8 @@ export async function createPcbCard(canvas, { still = false } = {}) {
     t += dt;
     statusLed.material.emissiveIntensity = Math.sin(t * 5) > 0.55 ? 2.4 : 0.15;
     boot();
-    // the switch clicks down on a flip and springs back
-    state.press *= 0.86;
+    // the switch goes down while it is held and springs back
+    state.press += ((held ? 1 : 0) - state.press) * (held ? 0.5 : 0.25);
     plunger.position.z = z0 + 0.032 - state.press * 0.009;
     pose();
     renderer.render(scene, camera);
@@ -820,6 +829,10 @@ export async function createPcbCard(canvas, { still = false } = {}) {
     const now = performance.now() / 1000; // wall time: the boot takes the same on any frame rate
     if (bootAt === null && state.enter > 0.85) bootAt = now;
     const since = bootAt === null ? 0 : now - bootAt;
+    // a reset: the panel and the matrix go dark for a beat before the boot replays
+    const off = since < 0;
+    panel.material.emissiveIntensity = off ? 0 : 2.2;
+    if (off) { light(0); return; }
     const prog = Math.min(1, Math.max(0, since / 1.5));
     const cursor = prog >= 1 && Math.floor(now / 0.53) % 2 === 0;
     const key = `${prog.toFixed(3)}${cursor}`;
@@ -850,11 +863,34 @@ export async function createPcbCard(canvas, { still = false } = {}) {
   io.observe(canvas);
   ro.observe(canvas);
 
-  // pointer: lean toward it; drag to spin; a tap flips
-  let down = null, lastX = 0;
+  // pointer: lean toward it; drag to spin; a tap flips; the BOOT switch reboots
+  let down = null, lastX = 0, held = false, onBtn = false;
+  const ray = new THREE.Raycaster(), ndc = new THREE.Vector2(), facing = new THREE.Vector3();
+  const overButton = (e) => {
+    // only while the front faces the viewer
+    facing.set(0, 0, 1).applyQuaternion(flipper.quaternion);
+    if (facing.z < 0.2) return false;
+    const r = canvas.getBoundingClientRect();
+    ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+    ray.setFromCamera(ndc, camera);
+    return ray.intersectObject(hit, false).length > 0;
+  };
+  const reboot = () => {
+    bootAt = performance.now() / 1000 + 0.35;
+    drawn = '';
+    onBoot?.();
+  };
   const onMove = (e) => {
     const r = canvas.getBoundingClientRect();
+    if (e.pointerType === 'mouse' && !down) {
+      const over = overButton(e);
+      if (over !== onBtn) {
+        onBtn = over;
+        canvas.dataset.cursor = over ? 'Boot' : 'Flip';
+      }
+    }
     if (down) {
+      if (held) return;
       state.dragV += (e.clientX - lastX) * 0.004;
       lastX = e.clientX;
       return;
@@ -863,11 +899,21 @@ export async function createPcbCard(canvas, { still = false } = {}) {
     state.ty = ((e.clientX - r.left) / r.width - 0.5) * 0.7;
     state.tx = ((e.clientY - r.top) / r.height - 0.5) * 0.45;
   };
-  const onDown = (e) => { down = [e.clientX, e.clientY]; lastX = e.clientX; };
+  const onDown = (e) => {
+    down = [e.clientX, e.clientY];
+    lastX = e.clientX;
+    held = overButton(e);
+  };
   const onUp = (e) => {
-    if (down && Math.hypot(e.clientX - down[0], e.clientY - down[1]) < 7) {
+    const tap = down && Math.hypot(e.clientX - down[0], e.clientY - down[1]) < 12;
+    if (held) {
+      held = false;
+      down = null;
+      if (tap) reboot();
+      return;
+    }
+    if (tap) {
       state.flipTo = state.flipTo ? 0 : Math.PI;
-      state.press = 1;
       // settle any spin so the flip lands square
       state.drag = ((state.drag % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
       if (state.drag > Math.PI) state.drag -= Math.PI * 2;
@@ -876,7 +922,7 @@ export async function createPcbCard(canvas, { still = false } = {}) {
     }
     down = null;
   };
-  const onLeave = () => { state.tx = 0; state.ty = 0; down = null; };
+  const onLeave = () => { state.tx = 0; state.ty = 0; down = null; held = false; };
   canvas.addEventListener('pointermove', onMove);
   canvas.addEventListener('pointerdown', onDown);
   addEventListener('pointerup', onUp);

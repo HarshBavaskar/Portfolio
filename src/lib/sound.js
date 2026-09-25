@@ -1,4 +1,4 @@
-// Tactile UI clicks, synthesised — off until the visitor turns them on.
+// Tactile UI clicks, synthesised: off until the visitor turns them on.
 let ctx = null;
 export const sound = { on: false };
 

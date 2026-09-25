@@ -1,5 +1,5 @@
 /*
-  Live screens for each project — small working models of the idea,
+  Live screens for each project: small working models of the idea,
   drawn on a 2D canvas in the device's LCD palette.
   Each factory returns { frame(ctx, w, h, t, dt, pointer), click?(pointer), readout }.
 */
@@ -378,7 +378,7 @@ export function ballot() {
       c.fillText(`NONCE ${nonce}`, px + 8, y0 + bh - 8);
 
       // Merkle tree over the pending votes
-      const leaves = pending.length ? pending : [{ id: '—', cand: '' }];
+      const leaves = pending.length ? pending : [{ id: '·', cand: '' }];
       const ty = y0 + bh + pad * 1.6, tb = h - pad * 3.2;
       const tx0 = pad, tw = w - pad * 2;
       let level = leaves.map((l, i) => ({ x: tx0 + ((i + 0.5) / leaves.length) * tw, y: tb, l }));

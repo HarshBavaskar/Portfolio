@@ -35,7 +35,7 @@ export default function Contact() {
     <section id="contact" className="ct" ref={root} data-chapter data-theme="dark">
       <div className="ct__sheet">
         <div className="wrap">
-          <div className="sec-head mono"><span>07 — Contact</span><span className="dim">Open to internships, research and builds</span></div>
+          <div className="sec-head mono"><span>07 / Contact</span><span className="dim">Open to internships, research and builds</span></div>
           <h2 className="ct__head">Got something<br />that needs to move?</h2>
           <div className="ct__body">
             <div className="ct__reach">

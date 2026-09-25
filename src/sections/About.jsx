@@ -27,12 +27,12 @@ export default function About() {
     <section id="about" className="ab" ref={root} data-chapter data-theme="light">
       <div className="wrap">
         <div className="sec-head mono">
-          <span>02 — About</span>
+          <span>02 / About</span>
           <span className="dim">Mechanical · Electrical · Software</span>
         </div>
         <p className="ab__statement">
           I lead robotics builds and carry machines from CAD to competition. I’m strongest where the mechanical meets
-          the electrical — embedded control and real-time computer vision — and I write the software that ties them
+          the electrical (embedded control and real-time computer vision), and I write the software that ties them
           together, from firmware to the systems a whole school runs on.
         </p>
 

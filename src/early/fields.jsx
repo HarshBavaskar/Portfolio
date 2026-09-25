@@ -27,7 +27,7 @@ export function Text({ label, hint, error, value, onChange, required, type = 'te
   );
 }
 
-// One choice from a few — a row of buttons with a sliding marker.
+// One choice from a few: a row of buttons with a sliding marker.
 export function Segmented({ label, options, value, onChange, error, required, name }) {
   const id = useId();
   const i = options.indexOf(value);

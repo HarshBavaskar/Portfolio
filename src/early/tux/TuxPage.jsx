@@ -15,13 +15,13 @@ const AGENTS = [
   ['Forge', 'Full software builds.'],
 ];
 const LANES = [
-  ['Local', 'A model on your own GPU answers first — chat, chores, research. It keeps working when the network is gone.', 1.1],
+  ['Local', 'A model on your own GPU answers first: chat, chores, research. It keeps working when the network is gone.', 1.1],
   ['Claude', 'The seven specialists and every build, through the Claude Agent SDK.', 2.2],
   ['Gemini', 'Optional. Takes the quick picture-reading turns off your Claude window.', 4.2],
 ];
 const SHOTS = [
   ['desktop', 'Desktop', 'Your apps, your agents and one command bar. Nothing else on screen.'],
-  ['focus', 'Focus', 'A session clears the desk and the avatar becomes an hourglass — violet for time spent, cyan for time left.'],
+  ['focus', 'Focus', 'A session clears the desk and the avatar becomes an hourglass: violet for time spent, cyan for time left.'],
   ['notebook', 'Notebook', 'Ruled paper and fourteen block types, drawn by TUX’s own canvas engine.'],
   ['academics', 'Academics', 'Connect Google once: the Classroom backlog, what’s due soon and mail, in one place.'],
 ];
@@ -103,7 +103,7 @@ function CommandBar({ onEmail, setMood }) {
     setMood('think');
     setTimeout(() => {
       if (isEmail(v)) {
-        setReply('Got it — that’s in the form below. A few more details and you’re on the list.');
+        setReply('Got it. That’s in the form below. A few more details and you’re on the list.');
         onEmail(v);
         setValue('');
       } else {
@@ -196,7 +196,7 @@ function JoinForm({ preset, setMood, setAgent, formRef }) {
           {result?.fallback
             ? 'Your email app should have opened with your details. Send it and you’re on the list.'
             : result?.duplicate
-              ? 'You were already on the list — your place is kept.'
+              ? 'You were already on the list. Your place is kept.'
               : `You’re on the early-access list. I’ll write to ${f.email.trim()} when your wave opens.`}
         </p>
       </div>
@@ -428,7 +428,7 @@ export default function TuxPage() {
           ))}
           <figure className="tx-shot tx-shot--text">
             <div className="tx-shot__img"><p>“Guide me through installing Python.”</p></div>
-            <figcaption><b>Vision</b> A card on your real desktop that gives one step at a time, with a close-up of exactly what to click — and waits until you’ve done it.</figcaption>
+            <figcaption><b>Vision</b> A card on your real desktop that gives one step at a time, with a close-up of exactly what to click, and waits until you’ve done it.</figcaption>
           </figure>
         </div>
       </section>

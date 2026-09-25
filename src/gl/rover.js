@@ -77,7 +77,7 @@ export function createRover(canvas) {
   addPart(box(0.7, 0.02, 0.02), 0, dC, v(0, 0.43, 0.215));
   addPart(box(0.7, 0.02, 0.02), 0, dC, v(0, 0.43, -0.215));
 
-  /* 03 Suspension — differential bar, rockers, bogies, struts */
+  /* 03 Suspension: differential bar, rockers, bogies, struts */
   addPart(cyl(0.012, 0.66), 2, v(0, 0.12, 0), v(-0.02, 0.63, 0), Z);
   for (const s of [1, -1]) {
     const z = s * 0.3;
@@ -140,7 +140,7 @@ export function createRover(canvas) {
   addPart(box(0.11, 0.022, 0.09), 4, dE, v(0.12, 0.71, 0));
   for (let i = 0; i < 7; i++) addPart(box(0.006, 0.03, 0.09), 4, dE, v(0.075 + i * 0.015, 0.735, 0));
 
-  /* 06 Controls — mast, stereo head, LiDAR, antenna */
+  /* 06 Controls: mast, stereo head, LiDAR, antenna */
   const dK = v(0.12, 0.82, 0);
   addPart(cyl(0.014, 0.32, 12), 5, dK, v(0.36, 0.76, 0.15));
   addPart(box(0.1, 0.065, 0.15), 5, dK, v(0.37, 0.95, 0.15));
@@ -165,7 +165,7 @@ export function createRover(canvas) {
     if (b.spin) spinners.push(g);
   }
 
-  /* Turntable — a measured ring the rover stands on */
+  /* Turntable: a measured ring the rover stands on */
   {
     const pts = [];
     const ring = (r, n = 128) => {
@@ -225,7 +225,7 @@ export function createRover(canvas) {
   const ndc = new THREE.Vector3();
   let last = performance.now();
 
-  // the last frame's inputs — when nothing moved, the GPU gets the frame off
+  // the last frame's inputs: when nothing moved, the GPU gets the frame off
   const seen = new Float32Array(20);
   let shownAlpha = -1;
   function frame() {

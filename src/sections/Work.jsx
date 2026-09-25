@@ -67,9 +67,9 @@ export default function Work() {
   return (
     <section id="work" className="wk" ref={root} data-chapter data-theme="light">
       <div className="wk__head wrap">
-        <div className="sec-head mono"><span>04 — Work</span><span className="dim">Selected, 2024 — 2026</span></div>
+        <div className="sec-head mono"><span>04 / Work</span><span className="dim">Selected, 2024 to 2026</span></div>
         <h2 className="wk__title" data-reveal="lines">Things I’ve built that you can actually poke at.</h2>
-        <p className="wk__lede dim" data-reveal="fade">Every screen below is a working model of the idea — move, click and hover.</p>
+        <p className="wk__lede dim" data-reveal="fade">Every screen below is a working model of the idea. Move, click and hover.</p>
       </div>
 
       <div className="wk__stack">
@@ -122,7 +122,7 @@ export default function Work() {
 
       <div className="wk__also wrap">
         {alsoBuilt.map(([n, t]) => (
-          <p key={n} data-reveal="fade"><span className="mono dim">Also built</span> <strong>{n}</strong> — {t}</p>
+          <p key={n} data-reveal="fade"><span className="mono dim">Also built</span> <strong>{n}</strong>: {t}</p>
         ))}
       </div>
     </section>

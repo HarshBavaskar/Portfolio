@@ -19,7 +19,7 @@ export default function Mark({ guides = false, className = '' }) {
           <path className="mark__guide mark__tick" pathLength="1" d="M16.5 8.75h2M17.5 7.75v2M17.5 19.25h2M18.5 18.25v2" />
           <path className="mark__guide" pathLength="1" d="M4 29.5H23.75M4 28.5v2M23.75 28.5v2" />
           <text className="mark__note" x="24.4" y="6">R 5.25</text>
-          <text className="mark__note" x="4" y="33">HB — 26</text>
+          <text className="mark__note" x="4" y="33">HB / 26</text>
         </g>
       )}
       <g className="mark__glyph">

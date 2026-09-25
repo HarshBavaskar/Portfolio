@@ -11,7 +11,7 @@ export const CARD = {
   name: 'Harsh Bavaskar',
   role: 'Robotics · Embedded Systems · Computer Vision',
   place: 'Mumbai, India',
-  serial: 'HB — 26 · No. 0001',
+  serial: 'HB / 26 · No. 0001',
   rows: [
     ['Email', links.email],
     ...(links.phone ? [['Phone', links.phone]] : []),

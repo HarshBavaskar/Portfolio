@@ -1,4 +1,4 @@
-// Scroll-driven rover state — kept free of three.js so sections can import it
+// Scroll-driven rover state: kept free of three.js so sections can import it
 // without pulling the renderer into the main bundle.
 export const roverState = {
   cx: 0.7, cy: 0.42, // screen-space centre (0..1)

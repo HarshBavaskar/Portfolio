@@ -91,7 +91,7 @@ export default function Toolkit() {
   return (
     <section id="toolkit" className="tk" ref={root} data-chapter data-theme="light">
       <div className="wrap">
-        <div className="sec-head mono"><span>05 — Toolkit</span><span className="dim">Hover, click, or type on your keyboard</span></div>
+        <div className="sec-head mono"><span>05 / Toolkit</span><span className="dim">Hover, click, or type on your keyboard</span></div>
         <h2 className="tk__title" data-reveal="lines">Every layer of the stack, from torque to TypeScript.</h2>
 
         <div className="tk__stage">
@@ -103,7 +103,7 @@ export default function Toolkit() {
           <i className="tk__screw bl" aria-hidden="true" /><i className="tk__screw br" aria-hidden="true" />
           <div className="tk__lcd">
             <div className="tk__lcd-row mono">
-              <span>{String(sel.c + 1).padStart(2, '0')}.{String(sel.i + 1).padStart(2, '0')} — {cur.cat}</span>
+              <span>{String(sel.c + 1).padStart(2, '0')}.{String(sel.i + 1).padStart(2, '0')} / {cur.cat}</span>
               <span className="tk__meter" aria-hidden="true">
                 {toolkit.map((row, c) => (
                   <i key={row.cat} className={c === sel.c ? 'is-on' : ''} style={{ height: `${6 + row.keys.length * 1.6}px` }} />

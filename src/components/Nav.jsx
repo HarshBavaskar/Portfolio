@@ -38,7 +38,7 @@ export default function Nav() {
 
   return (
     <header className="nav">
-      <a className="nav__brand" href="#top" onClick={go('top')} aria-label="Harsh Bavaskar — back to top">
+      <a className="nav__brand" href="#top" onClick={go('top')} aria-label="Harsh Bavaskar, back to top">
         <Logo />
       </a>
       <div className="nav__chapter mono" aria-live="polite">

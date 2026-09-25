@@ -23,7 +23,7 @@ export default function IdCard() {
       try {
         const { createPcbCard } = await import('../gl/pcbcard');
         if (dead) return;
-        card = await createPcbCard(canvas.current, { still: reduced });
+        card = await createPcbCard(canvas.current, { still: reduced, onBoot: () => click(520, 0.05, 0.06) });
       } catch {
         loader.done('card'); // no WebGL: the links still work
         return;

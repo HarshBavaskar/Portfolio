@@ -28,7 +28,7 @@ export async function submitSignup(list, fields) {
   if (!data.ok) {
     const why = {
       email: 'That email address doesn’t look right.',
-      role: 'Desk testing is for students and teachers — pick one.',
+      role: 'Desk testing is for students and teachers. Pick one.',
       fields: 'A required field is missing.',
       slow: 'Please try that again.',
     }[data.error];

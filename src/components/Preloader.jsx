@@ -93,7 +93,7 @@ export default function Preloader({ onDone }) {
       <div className="pre" ref={root} aria-hidden="true">
         <div className="pre__row pre__top mono">
           <span>Harsh Bavaskar</span>
-          <span>Portfolio — Edition 2026</span>
+          <span>Portfolio · Edition 2026</span>
           <span>Mumbai, IN</span>
         </div>
         <div className="pre__row pre__bottom">
@@ -102,7 +102,7 @@ export default function Preloader({ onDone }) {
             <div className="pre__cells">
               {Array.from({ length: CELLS }, (_, i) => <i key={i} className="pre__cell" />)}
             </div>
-            <span className="mono">Drafting HB — 26</span>
+            <span className="mono">Drafting HB / 26</span>
           </div>
         </div>
       </div>

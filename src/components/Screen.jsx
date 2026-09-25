@@ -12,7 +12,7 @@ export default function Screen({ id }) {
     const demo = demos[id]();
     const ptr = { x: 0, y: 0, inside: false };
     let w = 0, h = 0, raf = 0, running = false, last = 0, t = 0, tick = 0;
-    // phones get 30 fps — the models read the same, the battery lasts longer
+    // phones get 30 fps: the models read the same, the battery lasts longer
     const minDt = matchMedia('(pointer: coarse)').matches ? 1 / 32 : 0;
 
     const size = () => {

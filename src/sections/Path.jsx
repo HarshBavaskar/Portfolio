@@ -61,7 +61,7 @@ export default function Path() {
     <section id="path" className="pa" ref={root} data-chapter data-theme="light">
       <div className="pa__track">
         <div className="pa__intro">
-          <div className="sec-head mono"><span>03 — Path</span></div>
+          <div className="sec-head mono"><span>03 / Path</span></div>
           <h2 className="pa__title" data-reveal="lines">From first semester to the C-suite.</h2>
           <p className="pa__lede dim">Four rooms, two years. Each one handed me something bigger to carry.</p>
         </div>
@@ -73,7 +73,7 @@ export default function Path() {
             </div>
             <p className="pa__year pa__reveal" aria-hidden="true"><span>’</span>{p.period.match(/\d{4}/)[0].slice(2)}</p>
             <h3 className="pa__org pa__reveal">{p.org}</h3>
-            <p className="pa__role pa__reveal">{p.role} <span className="dim">— {p.place}</span></p>
+            <p className="pa__role pa__reveal">{p.role} <span className="dim">· {p.place}</span></p>
             <ul className="pa__points">
               {p.points.map((t) => <li className="pa__reveal" key={t}>{t}</li>)}
             </ul>

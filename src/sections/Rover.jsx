@@ -23,13 +23,13 @@ export default function Rover() {
         },
       });
 
-      // 0 — the claim
+      // 0: the claim
       tl.from('.rv__claim .ln > span', { yPercent: 110, stagger: 0.12, duration: 0.9, ease: 'power3.out' }, 0)
         .from('.rv__facts > div', { y: 40, autoAlpha: 0, stagger: 0.15, duration: 0.7, ease: 'power3.out' }, 0.9)
         .to(roverState, { lockYaw: -0.3, duration: 2.6 }, 0)
         .to('.rv__claim, .rv__facts', { autoAlpha: 0, y: -60, duration: 0.6, ease: 'power2.in' }, 2.4)
 
-      // 1 — exploded view, one subsystem at a time
+      // 1: exploded view, one subsystem at a time
         .to(roverState, { explode: 1, duration: 1.3, ease: 'power2.inOut' }, 2.7)
         .to(roverState, { cx: 0.5, cy: 0.5, dist: 1, duration: 1.3, ease: 'power2.inOut' }, 2.5)
         .to(roverState, { lockYaw: -1.22, duration: 1.6, ease: 'power2.inOut' }, 2.5)
@@ -42,7 +42,7 @@ export default function Rover() {
       });
       tl.to([...labels, ...paths, ...dots, '.rv__legend'], { autoAlpha: 0, duration: 0.4 }, 6.9)
 
-      // 2 — reassemble, turn side-on, drive out of frame
+      // 2: reassemble, turn side-on, drive out of frame
         .to(roverState, { explode: 0, duration: 1, ease: 'power2.inOut' }, 7)
         .to(roverState, { lockYaw: 0, duration: 1, ease: 'power2.inOut' }, 7.3)
         .to(roverState, { drive: 1, duration: 1.4, ease: 'power2.in' }, 8.4)
@@ -71,7 +71,7 @@ export default function Rover() {
         });
       } else {
         // phones: native scrolling through a tall section with a CSS-sticky
-        // stage — nothing fights the finger. Scroll position picks the step;
+        // stage: nothing fights the finger. Scroll position picks the step;
         // each step then plays at its own pace, one screen of scroll apiece.
         root.current.classList.add('is-steps');
         const counter = root.current.querySelector('.rv__step');
@@ -97,7 +97,7 @@ export default function Rover() {
           },
           onEnter: () => { if (performance.now() >= skipUntil) go(0); },
           onLeaveBack: () => go(-1),
-          // past the chapter the rover has always driven off — even after a jump
+          // past the chapter the rover has always driven off: even after a jump
           onLeave: () => { tween?.kill(); tl.progress(1); index = STEPS.length - 1; },
         });
         // menu jumps skip straight to where the sequence should be
@@ -112,7 +112,7 @@ export default function Rover() {
         stopSteps = () => { off(); tween?.kill(); };
       }
 
-      // callout geometry follows the projected anchors — only when they move
+      // callout geometry follows the projected anchors: only when they move
       const svg = root.current.querySelector('.leaders');
       const last = new Float32Array(15);
       const place = () => {
@@ -166,7 +166,7 @@ export default function Rover() {
     <section id="rover" className="rv" ref={root} data-chapter data-theme="dark">
       <div className="rv__stage">
       <div className="rv__head wrap mono">
-        <span>01 — The Rover</span>
+        <span>01 / The Rover</span>
         <span className="dim">NASA Human Exploration Rover Challenge · RC Division · 2025</span>
         <span className="rv__step" aria-hidden="true" />
       </div>
@@ -200,14 +200,14 @@ export default function Rover() {
       ))}
       <p className="rv__legend wrap mono">
         <span>Exploded view</span>
-        <span className="dim">Illustrative figure — not to scale</span>
+        <span className="dim">Illustrative figure, not to scale</span>
       </p>
 
       <div className="rv__rank wrap">
         <div className="rv__rank-num" aria-label="5th"><span>5<sup>th</sup></span></div>
         <div className="rv__rank-copy">
           <p className="mono">Final standing</p>
-          <p>In the world, against 100+ international teams. The rover cleared every mission task — the mobility course, sample collection and LiDAR navigation.</p>
+          <p>In the world, against 100+ international teams. The rover cleared every mission task: the mobility course, sample collection and LiDAR navigation.</p>
         </div>
       </div>
       </div>

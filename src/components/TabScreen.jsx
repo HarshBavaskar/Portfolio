@@ -49,7 +49,7 @@ export default function TabScreen({ items, auto = 0, tone = 'light', name }) {
         {items.map((it, k) => (
           <div className="tabs__pane" key={it.label} style={{ visibility: k === 0 ? 'inherit' : 'hidden' }}>
             {it.type === 'img' && (
-              <img className={`tabs__media${it.fit === 'contain' ? ' is-contain' : ''}`} src={url(it.src)} alt={`${name} — ${it.label}`} width="1440" height="900" decoding="async" />
+              <img className={`tabs__media${it.fit === 'contain' ? ' is-contain' : ''}`} src={url(it.src)} alt={`${name}: ${it.label}`} width="1440" height="900" decoding="async" />
             )}
             {it.type === 'video' && (
               <video
@@ -60,7 +60,7 @@ export default function TabScreen({ items, auto = 0, tone = 'light', name }) {
                 loop
                 playsInline
                 preload="none"
-                aria-label={`${name} — ${it.label}`}
+                aria-label={`${name}: ${it.label}`}
               />
             )}
             {it.type === 'demo' && k === i && <Screen id={it.id} />}

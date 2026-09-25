@@ -1,5 +1,5 @@
 /* ─────────────────────────────────────────────────────────
-   Tokens — paper, ink, one signal colour. Themes are tweened
+   Tokens: paper, ink, one signal colour. Themes are tweened
    from JS (lib/motion.js); these are the light defaults.
    ───────────────────────────────────────────────────────── */
 :root {
@@ -312,7 +312,7 @@ main { position: relative; z-index: 2; }
 /* ── 01 Rover ──────────────────────────────────────────── */
 .rv { position: relative; height: 100vh; overflow: hidden; }
 .rv__stage { position: relative; height: 100%; overflow: hidden; }
-/* phones: a tall track with a sticky stage — the browser moves it, not JS */
+/* phones: a tall track with a sticky stage; the browser moves it, not JS */
 .rv.is-steps { height: calc(100svh * 9); overflow: visible; overflow: clip; }
 .rv.is-steps .rv__stage { position: sticky; top: 0; height: 100svh; }
 .rv__head { position: absolute; top: calc(var(--nav-h) + 18px); left: 0; right: 0; display: flex; justify-content: space-between; gap: 16px; }
@@ -472,7 +472,7 @@ main { position: relative; z-index: 2; }
   .wk__inner { will-change: transform; }
 }
 
-/* Device — a small piece of hardware around each screen */
+/* Device: a small piece of hardware around each screen */
 .device {
   grid-column: 7 / 13;
   position: relative;

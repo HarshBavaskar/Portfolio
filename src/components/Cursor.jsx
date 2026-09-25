@@ -12,13 +12,14 @@ export default function Cursor() {
     const el = dot.current;
     const xTo = gsap.quickTo(el, 'x', { duration: 0.18, ease: 'power3' });
     const yTo = gsap.quickTo(el, 'y', { duration: 0.18, ease: 'power3' });
-    let mode = '';
+    let mode = '', said = '';
     gsap.set(el, { autoAlpha: 0 });
     let shown = false;
 
     const set = (next, text = '') => {
-      if (next === mode) return;
+      if (next === mode && text === said) return;
       mode = next;
+      said = text;
       el.dataset.mode = next;
       label.current.textContent = text;
     };

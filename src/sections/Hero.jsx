@@ -74,12 +74,12 @@ export default function Hero({ ready }) {
       <div className="hero__fig" data-cursor="Drag">
         <div className="hero__fig-ui" aria-hidden="true">
           <i className="crop tl" /><i className="crop tr" /><i className="crop bl" /><i className="crop br" />
-          <span className="hero__caption mono" data-in>Fig. 01 — Rover, six subsystems <span className="dim">· drag to rotate</span></span>
+          <span className="hero__caption mono" data-in>Fig. 01 / Rover, six subsystems <span className="dim">· drag to rotate</span></span>
         </div>
       </div>
 
       <p className="hero__intro wrap" data-in>
-        I carry machines from <em>CAD to competition</em> — the mechanics, the electronics and the code that makes them move.
+        I carry machines from <em>CAD to competition</em>: the mechanics, the electronics and the code that makes them move.
       </p>
 
       <h1 className="hero__name wrap" aria-label="Harsh Bavaskar">
@@ -88,9 +88,9 @@ export default function Hero({ ready }) {
       </h1>
 
       <div className="hero__foot wrap mono" data-in>
-        <span>Third-year BTech, Computer Science — AI &amp; ML</span>
+        <span>Third-year BTech, Computer Science (AI &amp; ML)</span>
         <span className="hero__scroll">Scroll <i aria-hidden="true" /></span>
-        <span>Next: 01 — The Rover</span>
+        <span>Next: 01 / The Rover</span>
       </div>
     </section>
   );

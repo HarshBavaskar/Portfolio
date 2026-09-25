@@ -16,7 +16,7 @@ export default function GLStage() {
         requestAnimationFrame(() => requestAnimationFrame(() => loader.done('rover')));
       })
       .catch(() => {
-        if (canvas.current) canvas.current.style.display = 'none'; // no WebGL — the page still reads fine
+        if (canvas.current) canvas.current.style.display = 'none'; // no WebGL: the page still reads fine
         loader.done('rover');
       });
     return () => { dead = true; api?.dispose(); roverApi.current = null; };

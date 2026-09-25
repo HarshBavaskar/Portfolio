@@ -177,8 +177,16 @@ main { position: relative; z-index: 2; }
   color: var(--fg);
 }
 .nav__brand { grid-column: 1 / 4; display: flex; gap: 10px; align-items: center; font-size: 14px; font-weight: 500; letter-spacing: -0.01em; white-space: nowrap; }
-.nav__mark { width: 10px; height: 10px; border-radius: 2px; background: var(--signal); transition: transform 0.6s var(--ease); }
-.nav__brand:hover .nav__mark { transform: rotate(90deg); }
+/* HB logo: monogram + a name that folds into it */
+.logo { display: inline-flex; align-items: center; gap: 10px; }
+.logo__mark { flex: none; width: 28px; height: 28px; overflow: visible; }
+.logo__ink { fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: square; stroke-linejoin: miter; stroke-dasharray: 1; }
+.logo__bar { fill: none; stroke: var(--signal); stroke-width: 3.4; stroke-linecap: square; }
+.logo__word { display: inline-flex; overflow: hidden; white-space: nowrap; }
+.logo__ch { display: inline-block; overflow: hidden; line-height: 1.25; }
+.logo__ch > span { position: relative; display: block; transition: translate 0.5s var(--ease); transition-delay: calc(var(--i) * 16ms); }
+.logo__ch > span::after { content: attr(data-ch); position: absolute; left: 0; top: 100%; }
+.nav__brand:hover .logo__ch > span { translate: 0 -100%; }
 .nav__chapter { grid-column: 4 / 7; display: flex; gap: 8px; }
 .nav__sep { color: var(--mute); }
 .nav__links { grid-column: 7 / 10; display: flex; gap: 24px; }

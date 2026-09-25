@@ -2,7 +2,7 @@ import { record } from '../data';
 
 export default function Record() {
   return (
-    <section id="record" className="rc" data-chapter data-theme="lime">
+    <section id="record" className="rc" data-chapter data-theme="lime" data-rail="charcoal">
       <div className="wrap">
         <div className="sec-head mono"><span>06 / Record</span><span className="dim">Awards and languages</span></div>
         <ul className="rc__list">

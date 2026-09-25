@@ -70,14 +70,14 @@ function knurl() {
 }
 
 // printed text on a transparent sheet; the material's colour is the ink
-function printed(w, h, draw, px = 220) {
+function printed(w, h, draw, px = 360) {
   const c = Object.assign(document.createElement('canvas'), { width: Math.ceil(w * px), height: Math.ceil(h * px) });
   const g = c.getContext('2d');
   g.fillStyle = '#fff';
   draw(g, c.width, c.height);
   const t = new THREE.CanvasTexture(c);
   t.colorSpace = THREE.SRGBColorSpace;
-  t.anisotropy = 4;
+  t.anisotropy = 8;
   return { t, c, g };
 }
 
@@ -117,17 +117,17 @@ function layout(banks, compact) {
     };
   }
   // phones: two screens (the skill, and the bank's list) over six bank keys
-  const BW = 5.9, BH = 9.4;
-  const cats = banks.map((b, r) => ({ c: r, x: -1.84 + (r % 3) * 1.84, y: -1.44 - Math.floor(r / 3) * 0.78, w: 1.74, h: 0.66 }));
+  const BW = 5.9, BH = 9.6;
+  const cats = banks.map((b, r) => ({ c: r, x: -1.84 + (r % 3) * 1.84, y: -1.33 - Math.floor(r / 3) * 0.78, w: 1.74, h: 0.66 }));
   return {
     BW, BH, R: 0.46, tilt: -0.3, keys: [], cats,
-    well: { x: 0, y: -1.83, w: 5.5, h: 1.84 },
-    screen: { x: 0, y: 3.5, w: 5.4, h: 1.6 },
-    list: { x: 0, y: 1.13, w: 5.4, h: 2.84 },
+    well: { x: 0, y: -1.72, w: 5.5, h: 1.84 },
+    screen: { x: 0, y: 3.38, w: 5.2, h: 1.58 },
+    list: { x: 0, y: 0.99, w: 5.4, h: 2.8 },
     knob: null,
-    foot: { y: -3.2 },
-    grille: { x: 0, y: -3.95, w: 3.6, h: 0.5 },
-    screws: [[-2.62, 4.35], [2.62, 4.35], [-2.62, -4.35], [2.62, -4.35]],
+    foot: { y: -3.12 },
+    grille: { x: 0, y: -3.86, w: 3.6, h: 0.5 },
+    screws: [[-2.58, 4.45], [2.58, 4.45], [-2.58, -4.45], [2.58, -4.45]],
   };
 }
 
@@ -421,15 +421,29 @@ export async function createConsole(canvas, { banks, compact = false, onPick } =
   const led = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.03, 20).rotateX(Math.PI / 2), new THREE.MeshStandardMaterial({ color: '#ff8a55', emissive: '#ff5b14', emissiveIntensity: 1.2 }));
   led.position.set(footW / 2 - 0.08, L.foot.y, 0.012);
   unit.add(led);
-  const screwMat = new THREE.MeshPhysicalMaterial({ color: '#9a9b98', metalness: 1, roughness: 0.3 });
-  const slotMat = new THREE.MeshStandardMaterial({ color: '#2a2a2a' });
+  // screws: countersunk Phillips heads, each seated in a dark recess
+  const screwMat = new THREE.MeshPhysicalMaterial({ color: '#a7a8a5', metalness: 1, roughness: 0.28 });
+  const recessMat = new THREE.MeshStandardMaterial({ color: '#141414', roughness: 0.8 });
+  const slotMat = new THREE.MeshStandardMaterial({ color: '#1a1a1a', roughness: 0.9 });
+  // profile from the rim up to the crown, so the surface faces outwards
+  const head = new THREE.LatheGeometry([
+    new THREE.Vector2(0.12, -0.01), new THREE.Vector2(0.118, 0.004), new THREE.Vector2(0.1, 0.012), new THREE.Vector2(0.06, 0.017), new THREE.Vector2(0.0001, 0.018),
+  ], 32).rotateX(Math.PI / 2);
   L.screws.forEach(([x, y], k) => {
-    const s = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.13, 0.03, 24).rotateX(Math.PI / 2), screwMat);
-    s.position.set(x, y, 0.012);
-    const slot = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.035, 0.012), slotMat);
-    slot.position.set(x, y, 0.027);
-    slot.rotation.z = 0.4 + k * 0.9;
-    unit.add(s, slot);
+    const recess = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.012, 32).rotateX(Math.PI / 2), recessMat);
+    recess.position.set(x, y, 0.001);
+    const s = new THREE.Mesh(head, screwMat);
+    s.position.set(x, y, 0.004);
+    s.castShadow = true;
+    const cross = new THREE.Group();
+    [0, Math.PI / 2].forEach((a) => {
+      const slot = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.022, 0.01), slotMat);
+      slot.rotation.z = a;
+      cross.add(slot);
+    });
+    cross.position.set(x, y, 0.024);
+    cross.rotation.z = 0.35 + k * 0.7;
+    unit.add(recess, s, cross);
   });
   if (L.grille) {
     const gr = printed(L.grille.w, L.grille.h, (g, w, h) => {
@@ -493,17 +507,43 @@ export async function createConsole(canvas, { banks, compact = false, onPick } =
     const r = canvas.getBoundingClientRect();
     W = r.width; H = r.height;
     if (!W || !H) return;
-    renderer.setPixelRatio(Math.min(devicePixelRatio, coarse ? 1.75 : 2));
+    // desktop renders above 1x so the legends stay crisp
+    renderer.setPixelRatio(coarse ? Math.min(devicePixelRatio, 2) : Math.max(1.5, Math.min(devicePixelRatio, 2)));
     renderer.setSize(W, H, false);
     camera.aspect = W / H;
-    // fit the tilted unit with a little air around it
-    const fov = (camera.fov * Math.PI) / 180;
-    const h = L.BH * Math.cos(L.tilt) + 1.2, w = L.BW + 1.0;
-    const d = Math.max(h / 2 / Math.tan(fov / 2), w / 2 / Math.tan(fov / 2) / camera.aspect);
-    camera.position.set(0, 0, d);
-    camera.lookAt(0, 0, 0);
     camera.updateProjectionMatrix();
+    fit();
     need = true;
+  };
+  // Fit the unit at rest to the frame: project its real corners (the near
+  // edge is bigger than the far one), then pull the camera in or out and
+  // re-centre until they sit inside a small margin.
+  const hull = [];
+  for (const x of [-L.BW / 2, L.BW / 2]) for (const y of [-L.BH / 2, L.BH / 2]) for (const z of [0.1, -T]) hull.push(new THREE.Vector3(x, y, z));
+  if (L.knob) for (const x of [-1, 1]) for (const y of [-1, 1]) hull.push(new THREE.Vector3(L.knob.x + x * L.knob.r, L.knob.y + y * L.knob.r, 0.47));
+  const v = new THREE.Vector3();
+  const fit = () => {
+    const keep = [unit.rotation.x, unit.rotation.y, unit.position.y];
+    unit.rotation.set(L.tilt, 0, 0);
+    unit.position.y = 0;
+    unit.updateMatrixWorld(true);
+    const half = Math.tan((camera.fov * Math.PI) / 360);
+    let d = L.BW / half / 2, cy = 0;
+    for (let k = 0; k < 6; k++) {
+      camera.position.set(0, cy, d);
+      camera.lookAt(0, cy, 0);
+      camera.updateMatrixWorld(true);
+      let x0 = 1, x1 = -1, y0 = 1, y1 = -1;
+      for (const p of hull) {
+        v.copy(p).applyMatrix4(unit.matrixWorld).project(camera);
+        x0 = Math.min(x0, v.x); x1 = Math.max(x1, v.x); y0 = Math.min(y0, v.y); y1 = Math.max(y1, v.y);
+      }
+      cy += ((y0 + y1) / 2) * d * half;
+      d *= Math.max((x1 - x0) / 2 / 0.95, (y1 - y0) / 2 / 0.93);
+    }
+    camera.position.set(0, cy, d);
+    camera.lookAt(0, cy, 0);
+    [unit.rotation.x, unit.rotation.y, unit.position.y] = keep;
   };
   const pose = () => {
     state.px += (state.tx - state.px) * 0.08;

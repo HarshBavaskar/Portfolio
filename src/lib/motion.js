@@ -62,19 +62,11 @@ export const THEMES = {
   lime: { bg: [216, 232, 98], fg: [30, 32, 20], mute: [86, 96, 40], panel: [204, 222, 84], signal: [34, 34, 32] },
   charcoal: { bg: [50, 50, 50], fg: [235, 235, 223], mute: [150, 150, 140], panel: [62, 62, 61], signal: [233, 99, 26] },
 };
-// the top rail partners each chapter: its colour, its type, and the keys on it
-export const RAILS = {
-  orange: { navBg: [255, 91, 20], navFg: [18, 18, 18], navKey: [18, 18, 18], navKeyFg: [235, 235, 223] },
-  charcoal: { navBg: [40, 40, 40], navFg: [235, 235, 223], navKey: [235, 235, 223], navKeyFg: [34, 34, 32] },
-  lime: { navBg: [216, 232, 98], navFg: [30, 32, 20], navKey: [30, 32, 20], navKeyFg: [235, 235, 223] },
-};
-const look = (name, rail) => ({ ...THEMES[name], ...RAILS[rail] });
-const KEYS = Object.keys(look('parchment', 'orange'));
-const cssName = (key) => `--${key.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`)}`;
-let from = look('parchment', 'orange'), to = from, current = 'parchment:orange', serial = 0;
+const KEYS = Object.keys(THEMES.parchment);
+let from = THEMES.parchment, to = from, current = 'parchment', serial = 0;
 const tween = { p: 1 };
 // theme.t changes on every step, so the rover knows to redraw
-export const theme = { t: 0, name: 'parchment', bg: from.bg.slice(), fg: from.fg.slice() };
+export const theme = { t: 0, name: current, bg: from.bg.slice(), fg: from.fg.slice() };
 
 const mix = (a, b, t) => a.map((v, i) => Math.round(v + (b[i] - v) * t));
 function applyTheme() {
@@ -82,7 +74,7 @@ function applyTheme() {
   theme.t = serial + tween.p;
   for (const key of KEYS) {
     const c = mix(from[key], to[key], tween.p);
-    s.setProperty(cssName(key), `rgb(${c})`);
+    s.setProperty(`--${key}`, `rgb(${c})`);
     if (key === 'bg') theme.bg = c;
     if (key === 'fg') {
       theme.fg = c;
@@ -93,15 +85,14 @@ function applyTheme() {
 }
 // Every step restyles the whole page, so phones take a few quick steps
 // instead of a long per-frame fade.
-export function setTheme(name, rail = 'orange') {
-  if (!THEMES[name] || !RAILS[rail] || `${name}:${rail}` === current) return;
+export function setTheme(name) {
+  if (!THEMES[name] || name === current) return;
   // start from wherever the last change had got to
   from = Object.fromEntries(KEYS.map((key) => [key, mix(from[key], to[key], tween.p)]));
-  to = look(name, rail);
-  current = `${name}:${rail}`;
-  theme.name = name;
-  // the browser's own bar (phones, installed app) follows the rail
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', `rgb(${to.navBg})`);
+  to = THEMES[name];
+  current = theme.name = name;
+  // the browser's own bar (phones, installed app) follows the chapter
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', `rgb(${to.bg})`);
   serial += 1;
   tween.p = 0;
   gsap.to(tween, {

@@ -89,7 +89,7 @@ export default function Toolkit() {
 
   const cur = toolkit[sel.c];
   return (
-    <section id="toolkit" className="tk" ref={root} data-chapter data-theme="charcoal" data-rail="lime">
+    <section id="toolkit" className="tk" ref={root} data-chapter data-theme="charcoal">
       <div className="wrap">
         <div className="sec-head mono"><span>05 / Toolkit</span><span className="dim">Hover, click, or type on your keyboard</span></div>
         <h2 className="tk__title" data-reveal="lines">Every layer of the stack, from torque to TypeScript.</h2>

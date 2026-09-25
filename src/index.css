@@ -489,39 +489,81 @@ html::-webkit-scrollbar { display: none; }
 }
 
 /* Device: a small piece of hardware around each screen */
+/* ── Device: a machined aluminium unit with a real, recessed display ── */
 .device {
+  --alu-ink: #2a2a28;
+  --alu-dim: #74746e;
   grid-column: 7 / 13;
   position: relative;
-  background: var(--panel);
-  border-radius: 20px;
-  padding: 12px;
-  box-shadow: inset 0 0 0 1px var(--line);
+  padding: 14px 14px 12px;
+  border-radius: 22px;
+  color: var(--alu-ink);
+  /* bead-blasted aluminium: a soft studio gradient over a fine grain */
+  background:
+    radial-gradient(120% 90% at 30% 0%, rgba(255, 255, 255, 0.55), transparent 60%),
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.012) 0 1px, transparent 1px 3px),
+    linear-gradient(165deg, #ecebe7 0%, #d6d5d0 46%, #c3c2bd 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),      /* lit top chamfer */
+    inset 0 -1px 0 rgba(0, 0, 0, 0.18),           /* shaded bottom chamfer */
+    inset 1px 0 0 rgba(255, 255, 255, 0.5),
+    inset -1px 0 0 rgba(0, 0, 0, 0.08),
+    0 1px 1px rgba(0, 0, 0, 0.18),                /* contact */
+    0 10px 18px -8px rgba(0, 0, 0, 0.28),         /* key-light shadow */
+    0 34px 60px -28px rgba(0, 0, 0, 0.45);        /* ambient, on the desk */
 }
+.device .dim { color: var(--alu-dim); }
 .device__top, .device__foot { display: flex; align-items: center; gap: 10px; font-size: 10px; }
-.device__top { padding: 0 2px 10px; }
-.device__top span:first-of-type { margin-right: auto; }
-.device__foot { justify-content: space-between; padding: 10px 2px 0; min-height: 30px; }
-.screw { position: relative; flex: none; width: 9px; height: 9px; border-radius: 50%; background: var(--bg); box-shadow: inset 0 0 0 1px var(--line-strong); }
-.screw::after { content: ''; position: absolute; left: 1.5px; right: 1.5px; top: 4px; height: 1px; background: var(--line-strong); transform: rotate(-35deg); }
-.led { width: 6px; height: 6px; border-radius: 50%; background: var(--signal); animation: led 2.4s steps(1) infinite; }
-@keyframes led { 90% { opacity: 0.25; } }
-.device__screen { background: var(--lcd); border-radius: 10px; overflow: hidden; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.5); }
-.device__screen.is-light { background: transparent; box-shadow: none; overflow: visible; }
-.screen__canvas { display: block; width: 100%; aspect-ratio: 16 / 10; touch-action: pan-y; }
-.device__readout { position: absolute; right: 34px; bottom: 21px; font-size: 10px; white-space: nowrap; color: var(--fg); }
+.device__top { padding: 0 4px 12px; }
+.device__top span:first-of-type { margin-right: auto; font-weight: 600; }
+.device__foot { justify-content: space-between; padding: 12px 4px 0; min-height: 30px; }
 .device__foot .dim { margin-right: auto; margin-left: 4px; }
+/* countersunk Phillips screws */
+.screw {
+  position: relative; flex: none; width: 11px; height: 11px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fbfbf9, #b4b4b0 55%, #8d8d89);
+  box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.35), 0 1px 0 1.5px rgba(255, 255, 255, 0.7), inset 0 -1px 1px rgba(0, 0, 0, 0.25);
+}
+.screw::before, .screw::after { content: ''; position: absolute; left: 50%; top: 50%; width: 6px; height: 1.4px; margin: -0.7px 0 0 -3px; border-radius: 1px; background: #3a3a38; box-shadow: 0 0.6px 0 rgba(255, 255, 255, 0.6); transform: rotate(28deg); }
+.screw::after { transform: rotate(118deg); }
+.led { width: 6px; height: 6px; border-radius: 50%; background: radial-gradient(circle at 40% 35%, #ffb088, var(--signal) 60%); box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.3); animation: led 2.4s steps(1) infinite; }
+@keyframes led { 90% { opacity: 0.25; } }
 
-.device__screen.is-tabs { background: transparent; box-shadow: none; overflow: visible; }
-.tabs__view { position: relative; aspect-ratio: 16 / 10; border-radius: 10px; overflow: hidden; box-shadow: inset 0 0 0 1px var(--line); }
-.tabs--light .tabs__view { background: #f3f1ec; }
-.tabs--dark .tabs__view { background: var(--lcd); }
-.tabs__pane { position: absolute; inset: 0; }
-.tabs__pane .screen__canvas { height: 100%; aspect-ratio: auto; }
-.tabs__media { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 0 0; }
-.tabs__media.is-contain { inset: 6%; width: 88%; height: 88%; object-fit: contain; object-position: 50% 50%; }
-.tabs__media.is-phone { left: 50%; top: 5%; width: auto; height: 90%; aspect-ratio: 358 / 804; transform: translateX(-50%); border-radius: 14px; object-fit: cover; box-shadow: 0 0 0 1px rgba(233, 230, 223, 0.18); }
+/* the display: a black glass panel set down into the body */
+.device__screen, .tabs__view {
+  position: relative;
+  border: 7px solid #0b0b0b;               /* the bezel under the glass */
+  border-radius: 13px;
+  overflow: hidden;
+  background: var(--lcd);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.45),           /* the cut edge */
+    0 -1px 0 1px rgba(0, 0, 0, 0.22),        /* shadowed upper wall of the recess */
+    0 1.5px 0 1.5px rgba(255, 255, 255, 0.75); /* lit lower lip */
+}
+/* over the content: the recess's shadow falling onto the panel, and the glass */
+.device__screen::after, .tabs__view::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  border-radius: 6px;
+  background: linear-gradient(118deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.03) 30%, transparent 42%);
+  box-shadow:
+    inset 0 7px 12px -6px rgba(0, 0, 0, 0.75),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05),
+    inset 0 0 22px rgba(0, 0, 0, 0.35);
+}
+.device__screen.is-tabs { border: 0; border-radius: 0; background: transparent; box-shadow: none; overflow: visible; }
+.device__screen.is-tabs::after { content: none; }
+.device__screen.is-light { background: transparent; box-shadow: none; overflow: visible; }
+.device__readout { position: absolute; right: 34px; bottom: 21px; font-size: 10px; white-space: nowrap; color: var(--alu-ink); }
+.tabs__view { aspect-ratio: 16 / 10; }
 .tabs__pane .device__readout { display: none; }
-.tabs__keys { display: flex; gap: 6px; margin-top: 10px; }
+
+/* keys: light caps standing proud of the body; they travel when pressed */
+.tabs__keys { display: flex; gap: 7px; margin-top: 12px; }
 .key-btn {
   flex: 1;
   min-width: 0;
@@ -532,15 +574,31 @@ html::-webkit-scrollbar { display: none; }
   gap: 7px;
   padding: 10px 0 9px;
   border-radius: 7px;
-  background: var(--bg);
   font-size: 10px;
-  box-shadow: 0 2px 0 var(--line-strong), inset 0 0 0 1px var(--line);
-  transition: transform 0.14s var(--ease), box-shadow 0.14s var(--ease);
+  color: var(--alu-ink);
+  background: linear-gradient(180deg, #fbfaf7 0%, #e9e6df 100%);
+  box-shadow:
+    inset 0 1px 0 #fff,
+    inset 0 -2px 3px rgba(0, 0, 0, 0.06),
+    0 0 0 1px rgba(0, 0, 0, 0.14),
+    0 2px 0 #b3ada1,
+    0 3px 4px rgba(0, 0, 0, 0.22);
+  transition: transform 0.12s var(--ease), box-shadow 0.12s var(--ease);
 }
-.key-btn i { width: 5px; height: 5px; border-radius: 50%; background: var(--line-strong); transition: background 0.2s; }
+.key-btn i { width: 5px; height: 5px; border-radius: 50%; background: #b9b5ab; box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.25); transition: background 0.2s; }
+.key-btn.is-on { color: #efede7; background: linear-gradient(180deg, #34332f 0%, #1d1c1a 100%); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.5), 0 2px 0 #0c0c0b, 0 3px 4px rgba(0, 0, 0, 0.3); }
 .key-btn.is-on i { background: var(--signal); }
-.key-btn:hover { transform: translateY(1px); box-shadow: 0 1px 0 var(--line-strong), inset 0 0 0 1px var(--line); }
-.key-btn:active { transform: translateY(2px); box-shadow: 0 0 0 var(--line-strong), inset 0 0 0 1px var(--line); }
+.key-btn:hover { transform: translateY(1px); }
+.key-btn:active { transform: translateY(2px); box-shadow: inset 0 1px 0 #fff, 0 0 0 1px rgba(0, 0, 0, 0.14), 0 0 0 #b3ada1, 0 1px 1px rgba(0, 0, 0, 0.2); }
+.screen__canvas { display: block; width: 100%; aspect-ratio: 16 / 10; touch-action: pan-y; }
+.tabs--light .tabs__view { background: #f3f1ec; }
+.tabs--dark .tabs__view { background: var(--lcd); }
+.tabs__pane { position: absolute; inset: 0; }
+.tabs__pane .screen__canvas { height: 100%; aspect-ratio: auto; }
+.tabs__media { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 0 0; }
+.tabs__media.is-contain { inset: 6%; width: 88%; height: 88%; object-fit: contain; object-position: 50% 50%; }
+.tabs__media.is-phone { left: 50%; top: 5%; width: auto; height: 90%; aspect-ratio: 358 / 804; transform: translateX(-50%); border-radius: 14px; object-fit: cover; box-shadow: 0 0 0 1px rgba(233, 230, 223, 0.18); }
+.tabs__pane .device__readout { display: none; }
 
 /* ── 05 Toolkit: a piece of hardware on a desk ── */
 .tk { padding-block: clamp(120px, 18vh, 220px) clamp(90px, 14vh, 160px); }

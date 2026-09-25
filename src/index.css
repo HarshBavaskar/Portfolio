@@ -549,6 +549,7 @@ html::-webkit-scrollbar { display: none; }
 /* the rendered console */
 /* wide as the page allows, but never taller than the screen */
 .tk__gl { position: relative; left: 50%; translate: -50% 0; display: block; width: min(100vw, calc((100svh - var(--nav-h) - 20px) * 1.66)); aspect-ratio: 1.66; touch-action: pan-y; -webkit-tap-highlight-color: transparent; }
+.tk__gl:not(.is-compact) { width: 100vw; height: 100svh; aspect-ratio: auto; } /* desktop: the console fills the screen */
 .tk__gl.is-compact { width: 100vw; }
 .tk__gl.is-compact { aspect-ratio: 0.7; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }

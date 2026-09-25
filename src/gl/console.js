@@ -263,7 +263,7 @@ export async function createConsole(canvas, { banks, compact = false, onPick } =
     // depth of field: the focus sits on the screen, and racks to whatever you hover
     composer = new EffectComposer(renderer);
     composer.addPass(new RenderPass(scene, camera));
-    bokeh = new BokehPass(scene, camera, { focus: 12, aperture: 0.0022, maxblur: 0.007 });
+    bokeh = new BokehPass(scene, camera, { focus: 12, aperture: 0.0028, maxblur: 0.008 });
     composer.addPass(bokeh);
     composer.addPass(new OutputPass());
   }
@@ -583,15 +583,18 @@ export async function createConsole(canvas, { banks, compact = false, onPick } =
   // at rest: the top of the keyboard, so the screen and most keys read sharp
   const restFocus = new THREE.Vector3(0, L.well.y + L.well.h * 0.22, -0.1);
   const focusAt = restFocus.clone(), fw = new THREE.Vector3();
-  let focus = 0, lastPull = 0;
+  let focus = 0, lastPull = 0, aim = null;
   const pull = () => {
     if (!bokeh) return false;
-    fw.copy(focusAt).applyMatrix4(unit.matrixWorld);
-    const goal = camera.position.distanceTo(fw);
-    // time-based: it lands in about a third of a second at any frame rate
+    aim?.();
+    // the lens focuses on a depth along the view axis, not a straight-line
+    // distance: measure the point the same way, so it's sharp anywhere on screen
+    fw.copy(focusAt).applyMatrix4(unit.matrixWorld).applyMatrix4(camera.matrixWorldInverse);
+    const goal = -fw.z;
+    // time-based and quick: lands in well under a fifth of a second at any frame rate
     const now = performance.now(), dt = lastPull ? Math.min(0.1, (now - lastPull) / 1000) : 1;
     lastPull = now;
-    const next = focus ? focus + (goal - focus) * (1 - Math.exp(-dt * 9)) : goal;
+    const next = focus ? focus + (goal - focus) * (1 - Math.exp(-dt * 22)) : goal;
     const moved = Math.abs(next - focus) > 1e-3;
     focus = next;
     bokeh.uniforms.focus.value = focus;
@@ -646,6 +649,18 @@ export async function createConsole(canvas, { banks, compact = false, onPick } =
   // every visible surface of the unit, for the focus (the desk's shadow plane excluded)
   const surfaces = [];
   unit.traverse((o) => { if (o.isMesh && o !== desk) surfaces.push(o); });
+  // every frame, focus on whatever is under the pointer right now, even as the
+  // console sways or the page scrolls beneath a still mouse
+  let pointer = null;
+  const fray = new THREE.Raycaster(), fndc = new THREE.Vector2();
+  aim = () => {
+    if (!pointer) return;
+    const r = canvas.getBoundingClientRect();
+    fndc.set(((pointer[0] - r.left) / r.width) * 2 - 1, -((pointer[1] - r.top) / r.height) * 2 + 1);
+    fray.setFromCamera(fndc, camera);
+    const f = fray.intersectObjects(surfaces, false)[0];
+    if (f) focusAt.copy(unit.worldToLocal(f.point)); else focusAt.copy(restFocus);
+  };
   const pickables = [...catCaps, ...keyCaps];
   const hitAt = (e) => {
     const r = canvas.getBoundingClientRect();
@@ -677,9 +692,7 @@ export async function createConsole(canvas, { banks, compact = false, onPick } =
       state.ty = (e.clientY - r.top) / r.height - 0.5;
       const h = hitAt(e);
       if (h) canvas.setAttribute('data-cursor', ''); else canvas.removeAttribute('data-cursor');
-      // rack focus to exactly where the pointer is on the console
-      const f = ray.intersectObjects(surfaces, false)[0];
-      if (f) focusAt.copy(unit.worldToLocal(f.point)); else focusAt.copy(restFocus);
+      pointer = [e.clientX, e.clientY];
       canvas.style.cursor = h ? 'pointer' : '';
       if (h && !h.still && h !== hover && h.kind === 'key') {
         const [c, i] = target(h);
@@ -708,7 +721,7 @@ export async function createConsole(canvas, { banks, compact = false, onPick } =
     const [c, i] = target(h);
     onPick?.(c, i, 'tap');
   };
-  const onLeave = () => { state.tx = 0; state.ty = 0; hover = null; focusAt.copy(restFocus); };
+  const onLeave = () => { state.tx = 0; state.ty = 0; hover = null; pointer = null; focusAt.copy(restFocus); };
   canvas.addEventListener('pointermove', onMove);
   canvas.addEventListener('pointerdown', onDown);
   addEventListener('pointerup', onUp);

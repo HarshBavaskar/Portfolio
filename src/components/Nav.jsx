@@ -44,7 +44,7 @@ export default function Nav() {
         <Logo />
       </a>
       <div className="nav__chapter mono" aria-live="polite">
-        <span ref={num}>00</span>
+        <span className="nav__num" ref={num}>00</span>
         <span className="nav__sep">/</span>
         <span ref={title}>Index</span>
       </div>

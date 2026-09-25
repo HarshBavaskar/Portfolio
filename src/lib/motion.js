@@ -50,55 +50,30 @@ export const lockScroll = (on) => {
   if (lenis) (on ? lenis.stop() : lenis.start());
 };
 
-/* ── Themes: each chapter has its own colour, and one tweened step
-      carries CSS and WebGL from one to the next ── */
-// palette: Parchment, Deep Charcoal, Azure Mist, Ash Gray, Powder, Tangelo, and a lime
-export const THEMES = {
-  parchment: { bg: [235, 235, 223], fg: [34, 34, 32], mute: [124, 122, 110], panel: [224, 224, 208], signal: [235, 70, 0], face: [235, 235, 223] },
-  // the Rover chapter: an orange field, the rover in white with black lines
-  ember: { bg: [235, 70, 0], fg: [18, 18, 18], mute: [78, 26, 0], panel: [222, 60, 0], signal: [255, 255, 255], face: [255, 255, 250] },
-  azure: { bg: [169, 194, 224], fg: [24, 30, 42], mute: [58, 76, 102], panel: [155, 182, 215], signal: [235, 70, 0], face: [169, 194, 224] },
-  tangelo: { bg: [235, 70, 0], fg: [255, 255, 235], mute: [255, 208, 170], panel: [222, 60, 0], signal: [34, 34, 32], face: [235, 70, 0] },
-  powder: { bg: [255, 255, 235], fg: [34, 34, 32], mute: [128, 126, 108], panel: [246, 245, 222], signal: [235, 70, 0], face: [255, 255, 235] },
-  ash: { bg: [162, 194, 190], fg: [22, 34, 32], mute: [56, 84, 80], panel: [150, 183, 179], signal: [235, 70, 0], face: [162, 194, 190] },
-  lime: { bg: [216, 232, 98], fg: [30, 32, 20], mute: [86, 96, 40], panel: [204, 222, 84], signal: [34, 34, 32], face: [216, 232, 98] },
-  charcoal: { bg: [50, 50, 50], fg: [235, 235, 223], mute: [150, 150, 140], panel: [62, 62, 61], signal: [233, 99, 26], face: [50, 50, 50] },
-};
-const KEYS = Object.keys(THEMES.parchment);
-let from = THEMES.parchment, to = from, current = 'parchment', serial = 0;
-const tween = { p: 1 };
-// theme.t changes on every step, so the rover knows to redraw
-export const theme = { t: 0, name: current, bg: from.bg.slice(), fg: from.fg.slice(), face: from.face.slice(), signal: from.signal.slice() };
+/* ── Theme: paper ↔ ink, one tweened scalar drives CSS and WebGL ── */
+const LIGHT = { bg: [238, 236, 231], fg: [18, 18, 18], mute: [128, 125, 118], panel: [228, 225, 218] };
+const DARK = { bg: [16, 16, 15], fg: [236, 234, 228], mute: [122, 120, 114], panel: [30, 30, 28] };
+export const theme = { t: 0, bg: LIGHT.bg.slice(), fg: LIGHT.fg.slice() };
 
 const mix = (a, b, t) => a.map((v, i) => Math.round(v + (b[i] - v) * t));
 function applyTheme() {
   const s = document.documentElement.style;
-  theme.t = serial + tween.p;
-  for (const key of KEYS) {
-    const c = mix(from[key], to[key], tween.p);
-    s.setProperty(`--${key}`, `rgb(${c})`);
-    if (key === 'bg' || key === 'face' || key === 'signal') theme[key] = c;
-    if (key === 'fg') {
+  for (const k of Object.keys(LIGHT)) {
+    const c = mix(LIGHT[k], DARK[k], theme.t);
+    s.setProperty(`--${k}`, `rgb(${c})`);
+    if (k === 'bg') theme.bg = c;
+    if (k === 'fg') {
       theme.fg = c;
-      s.setProperty('--line', `rgba(${c},0.16)`);
-      s.setProperty('--line-strong', `rgba(${c},0.36)`);
+      s.setProperty('--line', `rgba(${c},0.14)`);
+      s.setProperty('--line-strong', `rgba(${c},0.32)`);
     }
   }
 }
 // Every step restyles the whole page, so phones take a few quick steps
 // instead of a long per-frame fade.
-export function setTheme(name) {
-  if (!THEMES[name] || name === current) return;
-  // start from wherever the last change had got to
-  from = Object.fromEntries(KEYS.map((key) => [key, mix(from[key], to[key], tween.p)]));
-  to = THEMES[name];
-  current = theme.name = name;
-  // the browser's own bar (phones, installed app) follows the chapter
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', `rgb(${to.bg})`);
-  serial += 1;
-  tween.p = 0;
-  gsap.to(tween, {
-    p: 1,
+export function setTheme(dark) {
+  gsap.to(theme, {
+    t: dark ? 1 : 0,
     duration: touch ? 0.24 : 0.9,
     ease: touch ? 'steps(2)' : 'power2.inOut',
     overwrite: true,

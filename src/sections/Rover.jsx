@@ -163,7 +163,7 @@ export default function Rover() {
   }, []);
 
   return (
-    <section id="rover" className="rv" ref={root} data-chapter data-theme="ember">
+    <section id="rover" className="rv" ref={root} data-chapter data-theme="dark">
       <div className="rv__stage">
       <div className="rv__head wrap mono">
         <span>01 / The Rover</span>

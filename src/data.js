@@ -38,30 +38,14 @@ export const stats = [
   { value: 900, suffix: '+', label: 'Tables unified into one Snowflake platform' },
 ];
 
-// newest first
 export const path = [
   {
-    period: 'May 2026 to Present',
-    org: 'House of Hiranandani',
-    role: 'AI Intern · Lead Developer & Project Architect',
+    period: 'Jul 2024',
+    org: 'Atlas Skilltech University',
+    role: 'BTech, Computer Science (AI & ML)',
     place: 'Mumbai',
-    points: [
-      'Sole developer of the IB Diploma student information system for Hiranandani Upscale School: nine role-based modules in Next.js and TypeScript, now in daily use.',
-      'Passwordless WhatsApp authentication with a four-role permission matrix, and an import pipeline that turns ManageBac gradebooks into live predictions.',
-      'Leads a 6-person team under the CTO on the MIS used by the C-suite: 900+ tables from six systems in one Snowflake medallion architecture, plus a workflow orchestration engine written from scratch.',
-    ],
-    tags: ['9 modules', '900+ tables', '6 systems'],
-  },
-  {
-    period: 'Oct 2025 to Jul 2026',
-    org: 'SPARC Society',
-    role: 'Head of Robotics Department',
-    place: 'Atlas Skilltech University',
-    points: [
-      "Founded the department's technical programme.",
-      'Ran university-level competitions and workshops, and mentored 40+ students through robotics and research projects.',
-    ],
-    tags: ['40+ students', 'Founding head'],
+    points: ['Started a degree in AI and machine learning, and immediately went looking for something with wheels.'],
+    tags: ['Class of 2028'],
   },
   {
     period: 'Sep 2024 to Apr 2025',
@@ -76,12 +60,27 @@ export const path = [
     tags: ['5th globally', '18 people', '6 subsystems'],
   },
   {
-    period: 'Jul 2024',
-    org: 'Atlas Skilltech University',
-    role: 'BTech, Computer Science (AI & ML)',
+    period: 'Oct 2025 to Jul 2026',
+    org: 'SPARC Society',
+    role: 'Head of Robotics Department',
+    place: 'Atlas Skilltech University',
+    points: [
+      "Founded the department's technical programme.",
+      'Ran university-level competitions and workshops, and mentored 40+ students through robotics and research projects.',
+    ],
+    tags: ['40+ students', 'Founding head'],
+  },
+  {
+    period: 'May 2026 to Present',
+    org: 'House of Hiranandani',
+    role: 'AI Intern · Lead Developer & Project Architect',
     place: 'Mumbai',
-    points: ['Started a degree in AI and machine learning, and immediately went looking for something with wheels.'],
-    tags: ['Class of 2028'],
+    points: [
+      'Sole developer of the IB Diploma student information system for Hiranandani Upscale School: nine role-based modules in Next.js and TypeScript, now in daily use.',
+      'Passwordless WhatsApp authentication with a four-role permission matrix, and an import pipeline that turns ManageBac gradebooks into live predictions.',
+      'Leads a 6-person team under the CTO on the MIS used by the C-suite: 900+ tables from six systems in one Snowflake medallion architecture, plus a workflow orchestration engine written from scratch.',
+    ],
+    tags: ['9 modules', '900+ tables', '6 systems'],
   },
 ];
 

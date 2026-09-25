@@ -574,6 +574,9 @@ function chipTop() {
   return t;
 }
 
+// hand the main thread back between heavy steps, so the preloader keeps animating
+const breathe = () => new Promise((r) => setTimeout(r, 0));
+
 export async function createPcbCard(canvas, { still = false } = {}) {
   await document.fonts?.ready;
   seed = 11;
@@ -613,6 +616,7 @@ export async function createPcbCard(canvas, { still = false } = {}) {
     return t;
   };
   const coat = peel();
+  await breathe();
   const faceMat = ({ col, orm, bump }, thumb) => {
     const m = tex(orm, false);
     return new THREE.MeshPhysicalMaterial({
@@ -643,11 +647,16 @@ export async function createPcbCard(canvas, { still = false } = {}) {
   ]));
   const top = new THREE.ShapeGeometry(outline(false, BEV), 12);
   uvRemap(top, minX);
-  const topMesh = new THREE.Mesh(top, faceMat(frontFace(), [0.86, 0.72]));
+  const front = frontFace();
+  await breathe();
+  const topMesh = new THREE.Mesh(top, faceMat(front, [0.86, 0.72]));
   topMesh.position.z = T / 2 + 0.0004;
   const bot = new THREE.ShapeGeometry(outline(true, BEV), 12);
   uvRemap(bot, -maxX);
-  const botMesh = new THREE.Mesh(bot, faceMat(backFace(), [0.12, 0.3]));
+  await breathe();
+  const back = backFace();
+  await breathe();
+  const botMesh = new THREE.Mesh(bot, faceMat(back, [0.12, 0.3]));
   botMesh.rotation.y = Math.PI;
   botMesh.position.z = -T / 2 - 0.0004;
   topMesh.receiveShadow = botMesh.receiveShadow = true;
@@ -829,6 +838,15 @@ export async function createPcbCard(canvas, { still = false } = {}) {
   resize();
   // compile shaders in parallel where the GPU allows, so the first frame doesn't stall the page
   await renderer.compileAsync(scene, camera);
+  // one warm frame in the resting pose: textures and the shadow map go up to
+  // the GPU now, then the canvas is cleared until the card is scrolled to
+  const enter = state.enter;
+  state.enter = 1;
+  pose();
+  renderer.render(scene, camera);
+  state.enter = enter;
+  pose();
+  renderer.clear();
   io.observe(canvas);
   ro.observe(canvas);
 

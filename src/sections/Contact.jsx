@@ -1,9 +1,11 @@
-import { useLayoutEffect, useRef } from 'react';
+import { lazy, Suspense, useLayoutEffect, useRef } from 'react';
 import { gsap, SplitText, scrollTo, finePointer } from '../lib/motion';
 import { links, early } from '../data';
 import { wipeTo } from '../early/wipe';
 import Magnetic from '../components/Magnetic';
 import Clock from '../components/Clock';
+// the card (and its QR encoder) loads on its own, after the page is up
+const MetalCard = lazy(() => import('../components/MetalCard'));
 
 export default function Contact() {
   const root = useRef(null);
@@ -52,6 +54,9 @@ export default function Contact() {
               </a>
             ))}
           </p>
+          <Suspense fallback={<div className="mc" style={{ minHeight: 420 }} />}>
+            <MetalCard />
+          </Suspense>
         </div>
         <footer className="ft wrap mono">
           <span>© 2026 Harsh Bavaskar</span>

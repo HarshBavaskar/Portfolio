@@ -113,7 +113,7 @@ function layout(banks, compact) {
       });
     });
     return {
-      BW, BH, R: 0.5, tilt: -0.6, well, keys, cats,
+      BW, BH, R: 0.5, tilt: -0.3, well, keys, cats,
       screen: { x: -0.62, y: 2.42, w: 10.3, h: 1.9 },
       knob: { x: 5.22, y: 2.42, r: 0.56 },
       foot: { y: -3.58 },
@@ -263,7 +263,7 @@ export async function createConsole(canvas, { banks, compact = false, onPick } =
     // depth of field: the focus sits on the screen, and racks to whatever you hover
     composer = new EffectComposer(renderer);
     composer.addPass(new RenderPass(scene, camera));
-    bokeh = new BokehPass(scene, camera, { focus: 12, aperture: 0.0016, maxblur: 0.006 });
+    bokeh = new BokehPass(scene, camera, { focus: 12, aperture: 0.0022, maxblur: 0.007 });
     composer.addPass(bokeh);
     composer.addPass(new OutputPass());
   }
@@ -322,8 +322,9 @@ export async function createConsole(canvas, { banks, compact = false, onPick } =
   screenBack.position.set(L.screen.x, L.screen.y, -0.2);
   unit.add(screenBack);
   const panel = new THREE.Mesh(new THREE.PlaneGeometry(L.screen.w - 0.3, L.screen.h - 0.3), new THREE.MeshPhysicalMaterial({
-    color: '#000', emissive: '#fff', emissiveMap: disp.tex, emissiveIntensity: 1.25, roughness: 0.06, clearcoat: 1, clearcoatRoughness: 0.18,
-    envMapIntensity: 0.35, // glass, but the studio's reflection mustn't wash out the type
+    color: '#000', emissive: '#fff', emissiveMap: disp.tex, emissiveIntensity: 1.25,
+    // anti-glare glass: a soft sheen, never a hotspot over the type
+    roughness: 0.45, specularIntensity: 0.25, clearcoat: 0.35, clearcoatRoughness: 0.5, envMapIntensity: 0.3,
   }));
   panel.position.set(L.screen.x, L.screen.y, -0.155);
   panel.receiveShadow = true;
@@ -561,7 +562,8 @@ export async function createConsole(canvas, { banks, compact = false, onPick } =
         x0 = Math.min(x0, v.x); x1 = Math.max(x1, v.x); y0 = Math.min(y0, v.y); y1 = Math.max(y1, v.y);
       }
       cy += ((y0 + y1) / 2) * d * half;
-      d *= immersive ? Math.max((x1 - x0) / 2 / 1.14, (y1 - y0) / 2 / 1.0) : Math.max((x1 - x0) / 2 / 0.95, (y1 - y0) / 2 / 0.93);
+      // desktop: the console covers the screen, edge to edge
+      d *= immersive ? Math.max((x1 - x0) / 2 / 1.05, (y1 - y0) / 2 / 1.0) : Math.max((x1 - x0) / 2 / 0.95, (y1 - y0) / 2 / 0.93);
     }
     camera.position.set(0, cy, d);
     camera.lookAt(0, cy, 0);
@@ -581,12 +583,15 @@ export async function createConsole(canvas, { banks, compact = false, onPick } =
   // at rest: the top of the keyboard, so the screen and most keys read sharp
   const restFocus = new THREE.Vector3(0, L.well.y + L.well.h * 0.22, -0.1);
   const focusAt = restFocus.clone(), fw = new THREE.Vector3();
-  let focus = 0;
+  let focus = 0, lastPull = 0;
   const pull = () => {
     if (!bokeh) return false;
     fw.copy(focusAt).applyMatrix4(unit.matrixWorld);
     const goal = camera.position.distanceTo(fw);
-    const next = focus ? focus + (goal - focus) * 0.12 : goal;
+    // time-based: it lands in about a third of a second at any frame rate
+    const now = performance.now(), dt = lastPull ? Math.min(0.1, (now - lastPull) / 1000) : 1;
+    lastPull = now;
+    const next = focus ? focus + (goal - focus) * (1 - Math.exp(-dt * 9)) : goal;
     const moved = Math.abs(next - focus) > 1e-3;
     focus = next;
     bokeh.uniforms.focus.value = focus;
@@ -638,6 +643,9 @@ export async function createConsole(canvas, { banks, compact = false, onPick } =
 
   /* ── Pointer ── */
   const ray = new THREE.Raycaster(), ndc = new THREE.Vector2(), hitPoint = new THREE.Vector3();
+  // every visible surface of the unit, for the focus (the desk's shadow plane excluded)
+  const surfaces = [];
+  unit.traverse((o) => { if (o.isMesh && o !== desk) surfaces.push(o); });
   const pickables = [...catCaps, ...keyCaps];
   const hitAt = (e) => {
     const r = canvas.getBoundingClientRect();
@@ -669,8 +677,9 @@ export async function createConsole(canvas, { banks, compact = false, onPick } =
       state.ty = (e.clientY - r.top) / r.height - 0.5;
       const h = hitAt(e);
       if (h) canvas.setAttribute('data-cursor', ''); else canvas.removeAttribute('data-cursor');
-      // rack focus to what's under the pointer; back to the screen when there's nothing
-      if (h) focusAt.copy(unit.worldToLocal(hitPoint.clone())); else focusAt.copy(restFocus);
+      // rack focus to exactly where the pointer is on the console
+      const f = ray.intersectObjects(surfaces, false)[0];
+      if (f) focusAt.copy(unit.worldToLocal(f.point)); else focusAt.copy(restFocus);
       canvas.style.cursor = h ? 'pointer' : '';
       if (h && !h.still && h !== hover && h.kind === 'key') {
         const [c, i] = target(h);

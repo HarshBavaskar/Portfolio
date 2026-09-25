@@ -12,7 +12,7 @@ import { roverState } from './state';
   line set, so the whole figure costs ~30 draw calls.
 */
 
-const SIGNAL = new THREE.Color(); // the highlight follows the chapter's accent
+const SIGNAL = new THREE.Color('#FF5B14');
 const ORDER = [0, 1, 2, 3, 4, 5];
 const STAGGER = [0, 0.1, 0.05, 0.14, 0.02, 0.08];
 const small = () => innerWidth < 700;
@@ -240,11 +240,11 @@ export function createRover(canvas) {
     // colours follow the paper ↔ ink theme
     bg.setRGB(theme.bg[0] / 255, theme.bg[1] / 255, theme.bg[2] / 255, THREE.SRGBColorSpace);
     fg.setRGB(theme.fg[0] / 255, theme.fg[1] / 255, theme.fg[2] / 255, THREE.SRGBColorSpace);
-    faceMat.color.setRGB(theme.face[0] / 255, theme.face[1] / 255, theme.face[2] / 255, THREE.SRGBColorSpace);
+    faceMat.color.copy(bg);
     groundMat.color.copy(fg);
     for (let i = 0; i < 6; i++) {
       glow[i] += ((s.focus === i ? 1 : 0) - glow[i]) * Math.min(1, dt * 8);
-      subMats[i].color.copy(col.copy(fg).lerp(SIGNAL.setRGB(theme.signal[0] / 255, theme.signal[1] / 255, theme.signal[2] / 255, THREE.SRGBColorSpace), glow[i]));
+      subMats[i].color.copy(col.copy(fg).lerp(SIGNAL, glow[i]));
     }
 
     // explode

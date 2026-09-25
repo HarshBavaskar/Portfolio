@@ -2,9 +2,6 @@ import { useLayoutEffect, useRef } from 'react';
 import { gsap } from '../lib/motion';
 import { path } from '../data';
 
-// newest first, graded from dark orange down through orange, light orange, grey to white
-const TONES = ['rust', 'tangelo', 'apricot', 'fog', 'white'];
-
 export default function Path() {
   const root = useRef(null);
   const readout = useRef(null);
@@ -61,19 +58,15 @@ export default function Path() {
   }, []);
 
   return (
-    <section id="path" className="pa" ref={root} data-chapter data-theme="powder">
+    <section id="path" className="pa" ref={root} data-chapter data-theme="light">
       <div className="pa__track">
         <div className="pa__intro">
           <div className="sec-head mono"><span>03 / Path</span></div>
-          <h2 className="pa__title" data-reveal="lines">From the C-suite back to first semester.</h2>
+          <h2 className="pa__title" data-reveal="lines">From first semester to the C-suite.</h2>
           <p className="pa__lede dim">Four rooms, two years. Each one handed me something bigger to carry.</p>
         </div>
-        <div className="pa__next" data-tone={TONES[0]}>
-          <span className="mono dim">Next</span>
-          <p>Whatever needs to move.</p>
-        </div>
         {path.map((p, i) => (
-          <article className="pa__panel" key={p.org} data-tone={TONES[i + 1] || 'white'}>
+          <article className="pa__panel" key={p.org}>
             <div className="pa__top mono pa__reveal">
               <span>03.{i + 1}</span>
               <span>{p.period}</span>
@@ -90,6 +83,10 @@ export default function Path() {
           </article>
         ))}
         <div className="pa__ticks" aria-hidden="true" />
+        <div className="pa__next">
+          <span className="mono dim">Next</span>
+          <p>Whatever needs to move.</p>
+        </div>
       </div>
       <div className="pa__tape" aria-hidden="true">
         <div className="pa__playhead"><span className="mono" ref={readout}>{path[0].period}</span></div>

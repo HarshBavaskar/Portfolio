@@ -24,7 +24,7 @@ export default function About() {
   }, []);
 
   return (
-    <section id="about" className="ab" ref={root} data-chapter data-theme="azure">
+    <section id="about" className="ab" ref={root} data-chapter data-theme="light">
       <div className="wrap">
         <div className="sec-head mono">
           <span>02 / About</span>

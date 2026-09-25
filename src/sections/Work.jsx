@@ -6,6 +6,9 @@ import TabScreen from '../components/TabScreen';
 import Magnetic from '../components/Magnetic';
 import { wipeTo } from '../early/wipe';
 
+// each project gets its own colour from the palette; neighbours never repeat
+const TONES = { desk: 'tangelo', tux: 'charcoal', natlang: 'azure', polaris: 'powder', airo: 'lime', ballot: 'apricot', footfall: 'azure', prism: 'tangelo' };
+
 const toEarly = (e) => (ev) => { ev.preventDefault(); wipeTo(e.href, { color: e.color, ink: e.ink, label: e.wipe }); };
 
 function Device({ p, i }) {
@@ -75,7 +78,7 @@ export default function Work() {
       <div className="wk__stack">
         {projects.map((p, i) => (
           <article className="wk__card" key={p.id} id={`work-${p.id}`}>
-            <div className="wk__inner">
+            <div className="wk__inner" data-tone={TONES[p.id] || 'powder'}>
               <div className="wk__bar wrap mono">
                 <span>04.{i + 1}</span>
                 <span>{p.kind}</span>

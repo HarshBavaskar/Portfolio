@@ -182,6 +182,24 @@ main { position: relative; z-index: 2; }
   background: var(--bg);
   color: var(--fg);
 }
+/* Tones: the same palette for single blocks (Work cards, Path cards),
+   plus the Path's graded oranges, greys and white. */
+[data-tone='tangelo'] { --bg: rgb(235, 70, 0); --fg: rgb(255, 255, 235); --mute: rgb(255, 208, 170); --panel: rgb(222, 60, 0); --signal: rgb(34, 34, 32); }
+[data-tone='rust'] { --bg: rgb(160, 46, 0); --fg: rgb(255, 255, 235); --mute: rgb(244, 176, 140); --panel: rgb(146, 40, 0); --signal: rgb(255, 176, 128); }
+[data-tone='apricot'] { --bg: rgb(245, 163, 124); --fg: rgb(34, 30, 26); --mute: rgb(110, 58, 34); --panel: rgb(238, 150, 110); --signal: rgb(160, 46, 0); }
+[data-tone='fog'] { --bg: rgb(212, 212, 204); --fg: rgb(34, 34, 32); --mute: rgb(104, 104, 98); --panel: rgb(200, 200, 192); --signal: rgb(235, 70, 0); }
+[data-tone='white'] { --bg: rgb(255, 255, 255); --fg: rgb(34, 34, 32); --mute: rgb(128, 128, 122); --panel: rgb(244, 244, 238); --signal: rgb(235, 70, 0); }
+[data-tone='powder'] { --bg: rgb(255, 255, 235); --fg: rgb(34, 34, 32); --mute: rgb(128, 126, 108); --panel: rgb(246, 245, 222); --signal: rgb(235, 70, 0); }
+[data-tone='parchment'] { --bg: rgb(235, 235, 223); --fg: rgb(34, 34, 32); --mute: rgb(124, 122, 110); --panel: rgb(224, 224, 208); --signal: rgb(235, 70, 0); }
+[data-tone='azure'] { --bg: rgb(169, 194, 224); --fg: rgb(24, 30, 42); --mute: rgb(58, 76, 102); --panel: rgb(155, 182, 215); --signal: rgb(235, 70, 0); }
+[data-tone='lime'] { --bg: rgb(216, 232, 98); --fg: rgb(30, 32, 20); --mute: rgb(86, 96, 40); --panel: rgb(204, 222, 84); --signal: rgb(34, 34, 32); }
+[data-tone='charcoal'] { --bg: rgb(50, 50, 50); --fg: rgb(235, 235, 223); --mute: rgb(150, 150, 140); --panel: rgb(62, 62, 61); --signal: rgb(233, 99, 26); }
+[data-tone] {
+  --line: color-mix(in srgb, var(--fg) 18%, transparent);
+  --line-strong: color-mix(in srgb, var(--fg) 38%, transparent);
+  background: var(--bg);
+  color: var(--fg);
+}
 /* Contact's dark sheet rises over the previous chapter's colour */
 .ct[data-theme] { background: none; }
 
@@ -434,9 +452,11 @@ main { position: relative; z-index: 2; }
   }
   .pa__intro { width: 36vw; display: flex; flex-direction: column; justify-content: flex-end; padding-bottom: 20px; }
   .pa__intro .sec-head { margin-bottom: auto; }
-  .pa__panel { width: clamp(380px, 36vw, 620px); padding-left: clamp(20px, 2vw, 32px); border-left: 1px solid var(--line-strong); display: flex; flex-direction: column; }
+  .pa__track { gap: 14px; }
+  .pa__intro { margin-right: clamp(14px, 2vw, 40px); }
+  .pa__panel { width: clamp(380px, 36vw, 620px); padding: clamp(22px, 2vw, 32px); border-radius: 22px; display: flex; flex-direction: column; }
   .pa__org { margin-top: auto; }
-  .pa__next { width: 34vw; display: flex; flex-direction: column; justify-content: flex-end; padding: 0 0 20px clamp(20px, 2vw, 32px); border-left: 1px solid var(--line-strong); }
+  .pa__next { width: clamp(280px, 24vw, 420px); display: flex; flex-direction: column; justify-content: flex-end; padding: clamp(22px, 2vw, 32px); border-radius: 22px; }
   .pa__ticks {
     display: block;
     position: absolute;
@@ -813,7 +833,7 @@ main { position: relative; z-index: 2; }
 @media (max-width: 899px) {
   :root { --nav-h: 48px; }
   .nav__brand { grid-column: 1 / 7; }
-  .nav__chapter { grid-column: 7 / 11; justify-content: flex-end; }
+  .nav__chapter { grid-column: 5 / 11; justify-content: flex-end; white-space: nowrap; font-size: 11px; }
   .nav__menu { display: block; grid-column: 11 / 13; justify-self: end; padding: 10px 0; font-size: 11px; }
   .nav__links, .nav__right { display: none; }
 
@@ -842,9 +862,10 @@ main { position: relative; z-index: 2; }
   .pa { padding-block: 120px 40px; }
   .pa__track { padding-inline: var(--m); }
   .pa__intro { margin-bottom: 48px; }
-  .pa__panel { padding-block: 28px 44px; border-top: 1px solid var(--line-strong); }
+  .pa__panel, .pa__next { padding: 24px 22px 28px; border-radius: 18px; }
+  .pa__panel + .pa__panel, .pa__next + .pa__panel { margin-top: 10px; }
   .pa__org { margin-top: 36px; }
-  .pa__next { padding-top: 28px; border-top: 1px solid var(--line-strong); }
+  .pa__next { min-height: 180px; display: flex; flex-direction: column; justify-content: space-between; }
 
   .wk__bar { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 6px; }
   .wk__bar > :nth-child(2) { justify-self: end; }

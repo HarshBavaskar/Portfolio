@@ -5,7 +5,7 @@ import { wipeTo } from '../early/wipe';
 import Magnetic from '../components/Magnetic';
 import Clock from '../components/Clock';
 // the card (and its QR encoder) loads on its own, after the page is up
-const MetalCard = lazy(() => import('../components/MetalCard'));
+const IdCard = lazy(() => import('../components/IdCard'));
 
 export default function Contact() {
   const root = useRef(null);
@@ -37,26 +37,30 @@ export default function Contact() {
         <div className="wrap">
           <div className="sec-head mono"><span>07 — Contact</span><span className="dim">Open to internships, research and builds</span></div>
           <h2 className="ct__head">Got something<br />that needs to move?</h2>
-          <a className="ct__mail" href={`mailto:${links.email}`} data-cursor="Write">
-            <span className="ct__mail-text">{links.email}</span>
-            <span className="ct__arrow" aria-hidden="true">↗</span>
-          </a>
-          <div className="ct__row">
-            <Magnetic href={`mailto:${links.email}`} className="btn btn--inv">Email</Magnetic>
-            <Magnetic href={links.linkedin} target="_blank" rel="noreferrer" className="btn btn--inv">LinkedIn ↗</Magnetic>
-            <Magnetic href={links.github} target="_blank" rel="noreferrer" className="btn btn--inv">GitHub ↗</Magnetic>
-          </div>
-          <p className="ct__early mono">
-            <span className="dim">Early access</span>
-            {early.map((e) => (
-              <a key={e.href} href={e.href} className="ulink" onClick={(ev) => { ev.preventDefault(); wipeTo(e.href, { color: e.color, ink: e.ink, label: e.wipe }); }}>
-                {e.label} →
+          <div className="ct__body">
+            <div className="ct__reach">
+              <a className="ct__mail" href={`mailto:${links.email}`} data-cursor="Write">
+                <span className="ct__mail-text">{links.email}</span>
+                <span className="ct__arrow" aria-hidden="true">↗</span>
               </a>
-            ))}
-          </p>
-          <Suspense fallback={<div className="mc" style={{ minHeight: 420 }} />}>
-            <MetalCard />
-          </Suspense>
+              <div className="ct__row">
+                <Magnetic href={`mailto:${links.email}`} className="btn btn--inv">Email</Magnetic>
+                <Magnetic href={links.linkedin} target="_blank" rel="noreferrer" className="btn btn--inv">LinkedIn ↗</Magnetic>
+                <Magnetic href={links.github} target="_blank" rel="noreferrer" className="btn btn--inv">GitHub ↗</Magnetic>
+              </div>
+              <p className="ct__early mono">
+                <span className="dim">Early access</span>
+                {early.map((e) => (
+                  <a key={e.href} href={e.href} className="ulink" onClick={(ev) => { ev.preventDefault(); wipeTo(e.href, { color: e.color, ink: e.ink, label: e.wipe }); }}>
+                    {e.label} →
+                  </a>
+                ))}
+              </p>
+            </div>
+            <Suspense fallback={<div className="idc" />}>
+              <IdCard />
+            </Suspense>
+          </div>
         </div>
         <footer className="ft wrap mono">
           <span>© 2026 Harsh Bavaskar</span>

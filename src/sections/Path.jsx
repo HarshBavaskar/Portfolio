@@ -58,7 +58,7 @@ export default function Path() {
   }, []);
 
   return (
-    <section id="path" className="pa" ref={root} data-chapter data-theme="light">
+    <section id="path" className="pa" ref={root} data-chapter data-theme="charcoal">
       <div className="pa__track">
         <div className="pa__intro">
           <div className="sec-head mono"><span>03 / Path</span></div>

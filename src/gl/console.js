@@ -1,6 +1,10 @@
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
+import { BokehPass } from 'three/examples/jsm/postprocessing/BokehPass.js';
+import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 
 /*
   The toolkit as a piece of hardware, rendered: a bead-blasted aluminium
@@ -109,7 +113,7 @@ function layout(banks, compact) {
       });
     });
     return {
-      BW, BH, R: 0.5, tilt: -0.56, well, keys, cats,
+      BW, BH, R: 0.5, tilt: -0.6, well, keys, cats,
       screen: { x: -0.62, y: 2.42, w: 10.3, h: 1.9 },
       knob: { x: 5.22, y: 2.42, r: 0.56 },
       foot: { y: -3.58 },
@@ -240,7 +244,10 @@ export async function createConsole(canvas, { banks, compact = false, onPick } =
   seed = 7;
   const L = layout(banks, compact);
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' });
+  // desktop: a full-screen scene over the section's charcoal, shot through a lens
+  const immersive = !compact;
   renderer.setClearColor(0x000000, 0);
+  let composer = null, bokeh = null;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.0;
   renderer.shadowMap.enabled = true;
@@ -249,7 +256,18 @@ export async function createConsole(canvas, { banks, compact = false, onPick } =
   const pmrem = new THREE.PMREMGenerator(renderer);
   scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
   scene.environmentIntensity = compact ? 0.4 : 0.5;
-  const camera = new THREE.PerspectiveCamera(26, 1, 0.1, 200);
+  const camera = new THREE.PerspectiveCamera(immersive ? 36 : 26, 1, 0.1, 200);
+  if (immersive) {
+    // the section's charcoal behind it: rgb(60,60,59) lands on the page's rgb(46,46,45) after tone mapping
+    scene.background = new THREE.Color('rgb(60,60,59)');
+    // depth of field: the focus sits on the screen, and racks to whatever you hover
+    composer = new EffectComposer(renderer);
+    composer.addPass(new RenderPass(scene, camera));
+    bokeh = new BokehPass(scene, camera, { focus: 12, aperture: 0.0016, maxblur: 0.006 });
+    composer.addPass(bokeh);
+    composer.addPass(new OutputPass());
+  }
+  const draw = () => (composer ? composer.render() : renderer.render(scene, camera));
 
   // light from above-left-front: soft, long shadows across the keys
   const key = new THREE.DirectionalLight(0xfff7ee, compact ? 1.5 : 2.3);
@@ -304,7 +322,8 @@ export async function createConsole(canvas, { banks, compact = false, onPick } =
   screenBack.position.set(L.screen.x, L.screen.y, -0.2);
   unit.add(screenBack);
   const panel = new THREE.Mesh(new THREE.PlaneGeometry(L.screen.w - 0.3, L.screen.h - 0.3), new THREE.MeshPhysicalMaterial({
-    color: '#000', emissive: '#fff', emissiveMap: disp.tex, emissiveIntensity: 1.25, roughness: 0.06, clearcoat: 1, clearcoatRoughness: 0.04,
+    color: '#000', emissive: '#fff', emissiveMap: disp.tex, emissiveIntensity: 1.25, roughness: 0.06, clearcoat: 1, clearcoatRoughness: 0.18,
+    envMapIntensity: 0.35, // glass, but the studio's reflection mustn't wash out the type
   }));
   panel.position.set(L.screen.x, L.screen.y, -0.155);
   panel.receiveShadow = true;
@@ -351,10 +370,10 @@ export async function createConsole(canvas, { banks, compact = false, onPick } =
       } else {
         // shrink long legends to fit, never squash them
         let size = c.height * 0.42;
-        c2.font = `500 ${size}px ${SANS}`;
+        c2.font = `600 ${size}px ${SANS}`;
         const room = c.width - c.height * 0.3;
         const wide = c2.measureText(text).width;
-        if (wide > room) { size *= room / wide; c2.font = `500 ${size}px ${SANS}`; }
+        if (wide > room) { size *= room / wide; c2.font = `600 ${size}px ${SANS}`; }
         c2.textAlign = 'center';
         c2.textBaseline = 'middle';
         c2.fillText(text, c.width / 2, c.height / 2 + 1);
@@ -469,7 +488,8 @@ export async function createConsole(canvas, { banks, compact = false, onPick } =
   const kick = () => { need = true; };
   const setLook = (item, look) => {
     item.cap.material = look === 'orange' ? orange : look === 'dark' ? dark : pbt;
-    item.lg.material.color.set(look === 'light' ? '#1d1c1a' : '#f1efe8');
+    // printed ink: true black on light caps (it stays black through the lens's tone mapping)
+    item.lg.material.color.set(look === 'light' ? (immersive ? '#000000' : '#1d1c1a') : '#f1efe8');
   };
   const refresh = () => {
     catCaps.forEach((k) => setLook(k, k.c === state.c ? 'orange' : 'dark'));
@@ -510,6 +530,8 @@ export async function createConsole(canvas, { banks, compact = false, onPick } =
     // desktop renders above 1x so the legends stay crisp
     renderer.setPixelRatio(coarse ? Math.min(devicePixelRatio, 2) : Math.max(1.5, Math.min(devicePixelRatio, 2)));
     renderer.setSize(W, H, false);
+    composer?.setPixelRatio(renderer.getPixelRatio());
+    composer?.setSize(W, H);
     camera.aspect = W / H;
     camera.updateProjectionMatrix();
     fit();
@@ -539,7 +561,7 @@ export async function createConsole(canvas, { banks, compact = false, onPick } =
         x0 = Math.min(x0, v.x); x1 = Math.max(x1, v.x); y0 = Math.min(y0, v.y); y1 = Math.max(y1, v.y);
       }
       cy += ((y0 + y1) / 2) * d * half;
-      d *= Math.max((x1 - x0) / 2 / 0.95, (y1 - y0) / 2 / 0.93);
+      d *= immersive ? Math.max((x1 - x0) / 2 / 1.14, (y1 - y0) / 2 / 1.0) : Math.max((x1 - x0) / 2 / 0.95, (y1 - y0) / 2 / 0.93);
     }
     camera.position.set(0, cy, d);
     camera.lookAt(0, cy, 0);
@@ -555,11 +577,29 @@ export async function createConsole(canvas, { banks, compact = false, onPick } =
     return Math.abs(state.tx - state.px) + Math.abs(state.ty - state.py) > 1e-4;
   };
 
+  // where the lens focuses, in the unit's own space; it eases like a focus pull
+  // at rest: the top of the keyboard, so the screen and most keys read sharp
+  const restFocus = new THREE.Vector3(0, L.well.y + L.well.h * 0.22, -0.1);
+  const focusAt = restFocus.clone(), fw = new THREE.Vector3();
+  let focus = 0;
+  const pull = () => {
+    if (!bokeh) return false;
+    fw.copy(focusAt).applyMatrix4(unit.matrixWorld);
+    const goal = camera.position.distanceTo(fw);
+    const next = focus ? focus + (goal - focus) * 0.12 : goal;
+    const moved = Math.abs(next - focus) > 1e-3;
+    focus = next;
+    bokeh.uniforms.focus.value = focus;
+    return moved;
+  };
+
   const CH = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
   let raf = 0, visible = false;
   function frame() {
     raf = visible ? requestAnimationFrame(frame) : 0;
     if (pose()) need = true;
+    unit.updateMatrixWorld();
+    if (pull()) need = true;
     if (scramble) {
       const k = Math.min(1, (performance.now() - scramble.t0) / 550);
       const n = scramble.name;
@@ -576,7 +616,7 @@ export async function createConsole(canvas, { banks, compact = false, onPick } =
     }
     if (!need && !anim) return;
     need = false;
-    renderer.render(scene, camera);
+    draw();
   }
 
   const io = new IntersectionObserver(([e]) => {
@@ -591,13 +631,13 @@ export async function createConsole(canvas, { banks, compact = false, onPick } =
   scramble = null;
   await renderer.compileAsync(scene, camera);
   // a warm frame at rest: textures and shadow maps go up now, not on scroll
-  state.rise = 1; pose(); renderer.render(scene, camera);
+  state.rise = 1; pose(); unit.updateMatrixWorld(); pull(); draw();
   state.rise = 0; pose(); renderer.clear();
   io.observe(canvas);
   ro.observe(canvas);
 
   /* ── Pointer ── */
-  const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+  const ray = new THREE.Raycaster(), ndc = new THREE.Vector2(), hitPoint = new THREE.Vector3();
   const pickables = [...catCaps, ...keyCaps];
   const hitAt = (e) => {
     const r = canvas.getBoundingClientRect();
@@ -608,6 +648,7 @@ export async function createConsole(canvas, { banks, compact = false, onPick } =
     if (listPanel) meshes.push(listPanel);
     const hit = ray.intersectObjects(meshes, false)[0];
     if (!hit) return null;
+    hitPoint.copy(hit.point);
     if (knob && hit.object === knob.children[0]) return { knob: true, still: true };
     if (hit.object === listPanel) {
       const k = list.at(state.c, hit.uv.x, hit.uv.y);
@@ -628,6 +669,8 @@ export async function createConsole(canvas, { banks, compact = false, onPick } =
       state.ty = (e.clientY - r.top) / r.height - 0.5;
       const h = hitAt(e);
       if (h) canvas.setAttribute('data-cursor', ''); else canvas.removeAttribute('data-cursor');
+      // rack focus to what's under the pointer; back to the screen when there's nothing
+      if (h) focusAt.copy(unit.worldToLocal(hitPoint.clone())); else focusAt.copy(restFocus);
       canvas.style.cursor = h ? 'pointer' : '';
       if (h && !h.still && h !== hover && h.kind === 'key') {
         const [c, i] = target(h);
@@ -656,7 +699,7 @@ export async function createConsole(canvas, { banks, compact = false, onPick } =
     const [c, i] = target(h);
     onPick?.(c, i, 'tap');
   };
-  const onLeave = () => { state.tx = 0; state.ty = 0; hover = null; };
+  const onLeave = () => { state.tx = 0; state.ty = 0; hover = null; focusAt.copy(restFocus); };
   canvas.addEventListener('pointermove', onMove);
   canvas.addEventListener('pointerdown', onDown);
   addEventListener('pointerup', onUp);
@@ -688,6 +731,7 @@ export async function createConsole(canvas, { banks, compact = false, onPick } =
         });
       });
       pmrem.dispose();
+      composer?.dispose();
       renderer.dispose();
     },
   };

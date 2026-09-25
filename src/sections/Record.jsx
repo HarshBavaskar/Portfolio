@@ -4,7 +4,7 @@ export default function Record() {
   return (
     <section id="record" className="rc" data-chapter data-theme="light">
       <div className="wrap">
-        <div className="sec-head mono"><span>06 / Record</span><span className="dim">Awards, education, languages</span></div>
+        <div className="sec-head mono"><span>06 / Record</span><span className="dim">Awards and languages</span></div>
         <ul className="rc__list">
           {record.map((r) => (
             <li className="rc__row" key={r.v}>

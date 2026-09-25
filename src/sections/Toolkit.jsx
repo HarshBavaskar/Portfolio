@@ -1,15 +1,131 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { gsap, finePointer, isDesktop } from '../lib/motion';
+import { gsap, ScrollTrigger, finePointer, isDesktop, reduced } from '../lib/motion';
 import { click } from '../lib/sound';
+import { loader } from '../lib/preload';
 import { toolkit } from '../data';
 
 const flat = toolkit.flatMap((row, c) => row.keys.map((k, i) => ({ c, i, name: k[0], note: k[1] })));
+const phone = () => matchMedia('(max-width: 899px)').matches;
 
+/*
+  The toolkit is a rendered piece of hardware (gl/console.js): wide on
+  desktop, a compact unit on phones. If WebGL is unavailable, the CSS
+  board below stands in.
+*/
 export default function Toolkit() {
   const root = useRef(null);
-  const name = useRef(null);
+  const canvas = useRef(null);
+  const api = useRef(null);
   const [sel, setSel] = useState({ c: 0, i: 0 });
+  const [compact, setCompact] = useState(phone);
+  const [fallback, setFallback] = useState(false);
   const cycle = useRef({});
+
+  const pick = (c, i, sound = true) => {
+    setSel({ c, i });
+    if (sound) click(900 + c * 180 + i * 18, 0.025, 0.05);
+  };
+
+  // phones and desktops get different builds; rebuild if the width crosses over
+  useEffect(() => {
+    const mq = matchMedia('(max-width: 899px)');
+    const on = () => setCompact(mq.matches);
+    mq.addEventListener('change', on);
+    return () => mq.removeEventListener('change', on);
+  }, []);
+
+  useEffect(() => {
+    let dead = false, st, proxy = { v: reduced ? 1 : 0 };
+    (async () => {
+      let unit;
+      try {
+        const { createConsole } = await import('../gl/console');
+        if (dead) return;
+        unit = await createConsole(canvas.current, { banks: toolkit, compact, onPick: (c, i, how) => pick(c, i, how === 'tap') });
+      } catch {
+        if (!dead) setFallback(true);
+        loader.done('toolkit');
+        return;
+      }
+      if (dead) { unit.dispose(); return; }
+      api.current = unit;
+      loader.done('toolkit');
+      unit.setRise(proxy.v);
+      if (!reduced) {
+        // it rises off the desk and settles tilted back as the section scrolls in
+        st = gsap.to(proxy, {
+          v: 1,
+          ease: 'none',
+          onUpdate: () => unit.setRise(proxy.v),
+          scrollTrigger: { trigger: canvas.current, start: 'top bottom', end: 'center 62%', scrub: true },
+        });
+        ScrollTrigger.refresh();
+      }
+    })();
+    return () => {
+      dead = true;
+      st?.scrollTrigger?.kill();
+      st?.kill();
+      api.current?.dispose();
+      api.current = null;
+    };
+  }, [compact]);
+
+  useEffect(() => { api.current?.select(sel.c, sel.i); }, [sel]);
+
+  // type on your own keyboard to press keys here
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.metaKey || e.ctrlKey || e.altKey || e.key.length !== 1) return;
+      const r = root.current.getBoundingClientRect();
+      if (r.bottom < 0 || r.top > innerHeight) return;
+      const ch = e.key.toLowerCase();
+      const hits = flat.filter((f) => f.name.toLowerCase().startsWith(ch));
+      if (!hits.length) return;
+      const n = ((cycle.current[ch] ?? -1) + 1) % hits.length;
+      cycle.current[ch] = n;
+      const h = hits[n];
+      pick(h.c, h.i);
+      if (api.current) {
+        // the key press lands after the bank has switched on the compact unit
+        setTimeout(() => api.current?.press(h.c, h.i), 30);
+        return;
+      }
+      const el = root.current.querySelector(`[data-k="${h.c}-${h.i}"]`);
+      el?.classList.add('is-down');
+      setTimeout(() => el?.classList.remove('is-down'), 140);
+    };
+    addEventListener('keydown', onKey);
+    return () => removeEventListener('keydown', onKey);
+  }, []);
+
+  return (
+    <section id="toolkit" className="tk" ref={root} data-chapter data-theme="charcoal">
+      <div className="wrap">
+        <div className="sec-head mono"><span>05 / Toolkit</span><span className="dim">{compact ? 'Tap a bank, then a key' : 'Hover, click, or type on your keyboard'}</span></div>
+        <h2 className="tk__title" data-reveal="lines">Every layer of the stack, from torque to TypeScript.</h2>
+        {fallback ? (
+          <Board sel={sel} pick={pick} />
+        ) : (
+          <>
+            <canvas key={compact ? 'c' : 'w'} className={`tk__gl${compact ? ' is-compact' : ''}`} ref={canvas} role="img" aria-label="The toolkit console: a keyboard of skills with a screen that names the selected key." />
+            <ul className="sr-only">
+              {flat.map((f) => (
+                <li key={`${f.c}-${f.i}`}><button type="button" onClick={() => pick(f.c, f.i)}>{toolkit[f.c].cat}: {f.name}. {f.note}</button></li>
+              ))}
+            </ul>
+            <p className="sr-only" aria-live="polite">{toolkit[sel.c].keys[sel.i][0]}: {toolkit[sel.c].keys[sel.i][1]}</p>
+          </>
+        )}
+      </div>
+    </section>
+  );
+}
+
+// The CSS board: shown only where WebGL is unavailable.
+function Board({ sel, pick }) {
+  const root = useRef(null);
+  const name = useRef(null);
 
   useLayoutEffect(() => {
     const ctx = gsap.context(() => {
@@ -56,44 +172,14 @@ export default function Toolkit() {
     return () => ctx.revert();
   }, []);
 
-  const pick = (c, i, sound = true) => {
-    setSel({ c, i });
-    if (sound) click(900 + c * 180 + i * 18, 0.025, 0.05);
-  };
-
   useEffect(() => {
     const k = toolkit[sel.c].keys[sel.i];
     gsap.to(name.current, { duration: 0.6, scrambleText: { text: k[0], chars: 'upperAndLowerCase', speed: 0.8 } });
   }, [sel]);
 
-  // type on your own keyboard to press keys here
-  useEffect(() => {
-    const onKey = (e) => {
-      if (e.metaKey || e.ctrlKey || e.altKey || e.key.length !== 1) return;
-      const r = root.current.getBoundingClientRect();
-      if (r.bottom < 0 || r.top > innerHeight) return;
-      const ch = e.key.toLowerCase();
-      const hits = flat.filter((f) => f.name.toLowerCase().startsWith(ch));
-      if (!hits.length) return;
-      const n = ((cycle.current[ch] ?? -1) + 1) % hits.length;
-      cycle.current[ch] = n;
-      const h = hits[n];
-      pick(h.c, h.i);
-      const el = root.current.querySelector(`[data-k="${h.c}-${h.i}"]`);
-      el.classList.add('is-down');
-      setTimeout(() => el.classList.remove('is-down'), 140);
-    };
-    addEventListener('keydown', onKey);
-    return () => removeEventListener('keydown', onKey);
-  }, []);
-
   const cur = toolkit[sel.c];
   return (
-    <section id="toolkit" className="tk" ref={root} data-chapter data-theme="charcoal">
-      <div className="wrap">
-        <div className="sec-head mono"><span>05 / Toolkit</span><span className="dim">Hover, click, or type on your keyboard</span></div>
-        <h2 className="tk__title" data-reveal="lines">Every layer of the stack, from torque to TypeScript.</h2>
-
+    <div ref={root}>
         <div className="tk__stage">
         <div className="tk__rig">
         <div className="tk__shadow" aria-hidden="true" />
@@ -143,7 +229,6 @@ export default function Toolkit() {
         </div>
         </div>
         </div>
-      </div>
-    </section>
+    </div>
   );
 }

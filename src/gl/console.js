@@ -10,7 +10,9 @@ import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeom
   shadows: keys onto the well, the unit onto the desk it sits on.
 
   Two builds: the wide board for desktop, and a compact unit for phones
-  that shows one bank of keys at a time.
+  with two screens (the skill, and the live bank's list) over six bank
+  keys. Press a bank's key again to step through its skills, or touch
+  a skill on the list.
 */
 
 const SANS = 'Geist, "Helvetica Neue", Arial, sans-serif';
@@ -112,22 +114,20 @@ function layout(banks, compact) {
       knob: { x: 5.22, y: 2.42, r: 0.56 },
       foot: { y: -3.58 },
       screws: [[-5.85, 3.45], [5.85, 3.45], [-5.85, -3.45], [5.85, -3.45]],
-      pool: false,
     };
   }
+  // phones: two screens (the skill, and the bank's list) over six bank keys
   const BW = 5.9, BH = 9.4;
-  const cats = banks.map((b, r) => ({ c: r, x: -1.84 + (r % 3) * 1.84, y: 1.98 - Math.floor(r / 3) * 0.68, w: 1.74, h: 0.56 }));
-  const most = Math.max(...banks.map((b) => b.keys.length));
-  const keys = Array.from({ length: most }, (_, j) => ({ c: 0, i: j, x: j % 2 ? 1.39 : -1.39, y: 0.6 - Math.floor(j / 2) * 0.7, w: 2.68, h: KH }));
+  const cats = banks.map((b, r) => ({ c: r, x: -1.84 + (r % 3) * 1.84, y: -1.44 - Math.floor(r / 3) * 0.78, w: 1.74, h: 0.66 }));
   return {
-    BW, BH, R: 0.46, tilt: -0.3, keys, cats,
-    well: { x: 0, y: -0.28, w: 5.5, h: 5.32 },
-    screen: { x: 0, y: 3.48, w: 5.4, h: 1.9 },
+    BW, BH, R: 0.46, tilt: -0.3, keys: [], cats,
+    well: { x: 0, y: -1.83, w: 5.5, h: 1.84 },
+    screen: { x: 0, y: 3.5, w: 5.4, h: 1.6 },
+    list: { x: 0, y: 1.13, w: 5.4, h: 2.84 },
     knob: null,
-    foot: { y: -3.36 },
-    grille: { x: 0, y: -4.02, w: 3.6, h: 0.5 },
+    foot: { y: -3.2 },
+    grille: { x: 0, y: -3.95, w: 3.6, h: 0.5 },
     screws: [[-2.62, 4.35], [2.62, 4.35], [-2.62, -4.35], [2.62, -4.35]],
-    pool: true,
   };
 }
 
@@ -175,6 +175,65 @@ function display(banks, w, h) {
   return { tex, draw };
 }
 
+// the second screen: the live bank's skills, the selected one lit
+function listing(banks, w, h) {
+  const DW = 1536, DH = Math.round((1536 * h) / w);
+  const c = Object.assign(document.createElement('canvas'), { width: DW, height: DH });
+  const g = c.getContext('2d');
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 8;
+  const pad = DW * 0.05, head = DH * 0.14;
+  const geo = (n) => {
+    const per = Math.ceil(n / 2), rowH = (DH - head - pad * 1.4) / per, colW = (DW - pad * 2.6) / 2;
+    return { per, rowH, colW };
+  };
+  const draw = (c0, i0) => {
+    const keys = banks[c0].keys;
+    g.fillStyle = '#0e0f0f';
+    g.fillRect(0, 0, DW, DH);
+    const small = DH * 0.052;
+    g.font = `500 ${small}px ${MONO}`;
+    g.textBaseline = 'middle';
+    g.fillStyle = '#8c908b';
+    g.fillText(banks[c0].cat.toUpperCase(), pad, pad + small / 2);
+    g.textAlign = 'right';
+    g.fillText(`${keys.length} SKILLS`, DW - pad, pad + small / 2);
+    g.textAlign = 'left';
+    const { per, rowH, colW } = geo(keys.length);
+    keys.forEach(([name], k) => {
+      const col = Math.floor(k / per), row = k % per;
+      const x = pad + col * (colW + pad * 0.6), y = head + pad * 0.4 + row * rowH;
+      const on = k === i0;
+      if (on) {
+        g.fillStyle = '#ff5b14';
+        g.beginPath();
+        g.roundRect(x - pad * 0.3, y + rowH * 0.1, colW + pad * 0.3, rowH * 0.8, rowH * 0.18);
+        g.fill();
+      }
+      g.font = `500 ${small * 0.8}px ${MONO}`;
+      g.fillStyle = on ? 'rgba(18,18,18,0.7)' : '#5d615d';
+      g.fillText(String(k + 1).padStart(2, '0'), x, y + rowH / 2);
+      g.font = `500 ${Math.min(rowH * 0.36, DH * 0.075)}px ${SANS}`;
+      g.fillStyle = on ? '#121212' : '#e4e3dd';
+      g.fillText(name, x + small * 1.9, y + rowH / 2, colW - small * 2.2);
+    });
+    g.fillStyle = 'rgba(0,0,0,0.18)';
+    for (let y = 0; y < DH; y += 4) g.fillRect(0, y, DW, 1);
+    tex.needsUpdate = true;
+  };
+  // which skill sits under a point on the screen (uv, 0..1)
+  const at = (c0, u, v) => {
+    const n = banks[c0].keys.length, { per, rowH, colW } = geo(n);
+    const x = u * DW, y = (1 - v) * DH;
+    const col = x > pad + colW + pad * 0.3 ? 1 : 0;
+    const row = Math.floor((y - head - pad * 0.4) / rowH);
+    const k = col * per + row;
+    return row >= 0 && row < per && k < n ? k : -1;
+  };
+  return { tex, draw, at };
+}
+
 /* ── The build ──────────────────────────────────────────── */
 export async function createConsole(canvas, { banks, compact = false, onPick } = {}) {
   await document.fonts?.ready;
@@ -212,6 +271,7 @@ export async function createConsole(canvas, { banks, compact = false, onPick } =
   const shape = rr(new THREE.Shape(), 0, 0, L.BW, L.BH, L.R);
   shape.holes.push(rr(new THREE.Path(), L.screen.x, L.screen.y, L.screen.w, L.screen.h, 0.16));
   shape.holes.push(rr(new THREE.Path(), L.well.x, L.well.y, L.well.w, L.well.h, 0.22));
+  if (L.list) shape.holes.push(rr(new THREE.Path(), L.list.x, L.list.y, L.list.w, L.list.h, 0.16));
   const bodyGeo = new THREE.ExtrudeGeometry(shape, { depth: T - BEV * 2, bevelEnabled: true, bevelThickness: BEV, bevelSize: BEV, bevelOffset: -BEV, bevelSegments: 3, curveSegments: 10 });
   bodyGeo.translate(0, 0, -T + BEV);
   const blast = grain();
@@ -249,6 +309,17 @@ export async function createConsole(canvas, { banks, compact = false, onPick } =
   panel.position.set(L.screen.x, L.screen.y, -0.155);
   panel.receiveShadow = true;
   unit.add(panel);
+  let list = null, listPanel = null;
+  if (L.list) {
+    list = listing(banks, L.list.w - 0.3, L.list.h - 0.3);
+    const back = new THREE.Mesh(new RoundedBoxGeometry(L.list.w, L.list.h, 0.08, 2, 0.14), new THREE.MeshStandardMaterial({ color: '#0a0a0a', roughness: 0.7 }));
+    back.position.set(L.list.x, L.list.y, -0.2);
+    listPanel = new THREE.Mesh(new THREE.PlaneGeometry(L.list.w - 0.3, L.list.h - 0.3), new THREE.MeshPhysicalMaterial({
+      color: '#000', emissive: '#fff', emissiveMap: list.tex, emissiveIntensity: 1.25, roughness: 0.06, clearcoat: 1, clearcoatRoughness: 0.04,
+    }));
+    listPanel.position.set(L.list.x, L.list.y, -0.155);
+    unit.add(back, listPanel);
+  }
 
   /* keycaps: PBT, printed legends */
   const pbt = new THREE.MeshPhysicalMaterial({ color: '#e9e6de', roughness: 0.74, roughnessMap: blast, clearcoat: 0.08 });
@@ -278,10 +349,15 @@ export async function createConsole(canvas, { banks, compact = false, onPick } =
         c2.textBaseline = 'middle';
         c2.fillText(text.toUpperCase(), c.height * 0.2, c.height / 2, c.width - c.height * 0.4);
       } else {
-        c2.font = `500 ${c.height * 0.42}px ${SANS}`;
+        // shrink long legends to fit, never squash them
+        let size = c.height * 0.42;
+        c2.font = `500 ${size}px ${SANS}`;
+        const room = c.width - c.height * 0.3;
+        const wide = c2.measureText(text).width;
+        if (wide > room) { size *= room / wide; c2.font = `500 ${size}px ${SANS}`; }
         c2.textAlign = 'center';
         c2.textBaseline = 'middle';
-        c2.fillText(text, c.width / 2, c.height / 2 + 1, c.width - 12);
+        c2.fillText(text, c.width / 2, c.height / 2 + 1);
       }
       ink.t.needsUpdate = true;
     };
@@ -291,7 +367,7 @@ export async function createConsole(canvas, { banks, compact = false, onPick } =
   };
   const catCaps = L.cats.map((s) => makeCap({ ...s, kind: 'cat' }, banks[s.c].cat, true));
   await breathe();
-  const keyCaps = L.keys.map((s) => makeCap({ ...s, kind: 'key' }, L.pool ? '' : banks[s.c].keys[s.i][0], false));
+  const keyCaps = L.keys.map((s) => makeCap({ ...s, kind: 'key' }, banks[s.c].keys[s.i][0], false));
   await breathe();
 
   /* knob: knurled aluminium, it turns to the live bank */
@@ -375,7 +451,7 @@ export async function createConsole(canvas, { banks, compact = false, onPick } =
 
   /* ── State ── */
   const state = { c: -1, i: -1, rise: 0, px: 0, py: 0, tx: 0, ty: 0 };
-  let need = true, anim = 0, scramble = null, knobTurn = null, booted = false;
+  let need = true, anim = 0, scramble = null, knobTurn = null;
   const kick = () => { need = true; };
   const setLook = (item, look) => {
     item.cap.material = look === 'orange' ? orange : look === 'dark' ? dark : pbt;
@@ -383,13 +459,8 @@ export async function createConsole(canvas, { banks, compact = false, onPick } =
   };
   const refresh = () => {
     catCaps.forEach((k) => setLook(k, k.c === state.c ? 'orange' : 'dark'));
-    keyCaps.forEach((k) => {
-      const c = L.pool ? state.c : k.c;
-      const has = !!banks[c].keys[k.i];
-      k.g.visible = has;
-      if (L.pool && has) k.setLabel(banks[c].keys[k.i][0]);
-      setLook(k, c === state.c && k.i === state.i ? 'dark' : 'light');
-    });
+    list?.draw(state.c, state.i);
+    keyCaps.forEach((k) => setLook(k, k.c === state.c && k.i === state.i ? 'dark' : 'light'));
   };
   const travel = (item, down) => {
     const to = item.rest - (down ? 0.1 : 0);
@@ -410,8 +481,6 @@ export async function createConsole(canvas, { banks, compact = false, onPick } =
     if (c === state.c && i === state.i) return;
     const bankChanged = c !== state.c;
     state.c = c; state.i = i;
-    // a new bank on the compact unit: the keys dip as their legends change
-    if (bankChanged && L.pool && booted) keyCaps.forEach((k, j) => setTimeout(() => k.g.visible && pressKey(k), j * 18));
     refresh();
     scramble = { t0: performance.now(), name: banks[c].keys[i][0] };
     if (knob && bankChanged) knobTurn = { from: knob.rotation.z, to: -(c / banks.length) * Math.PI * 2, t0: performance.now() };
@@ -480,7 +549,6 @@ export async function createConsole(canvas, { banks, compact = false, onPick } =
   select(0, 0);
   disp.draw(0, 0, banks[0].keys[0][0]);
   scramble = null;
-  booted = true;
   await renderer.compileAsync(scene, camera);
   // a warm frame at rest: textures and shadow maps go up now, not on scroll
   state.rise = 1; pose(); renderer.render(scene, camera);
@@ -497,12 +565,21 @@ export async function createConsole(canvas, { banks, compact = false, onPick } =
     ray.setFromCamera(ndc, camera);
     const meshes = pickables.filter((p) => p.g.visible).map((p) => p.cap);
     if (knob) meshes.push(knob.children[0]);
+    if (listPanel) meshes.push(listPanel);
     const hit = ray.intersectObjects(meshes, false)[0];
     if (!hit) return null;
-    if (knob && hit.object === knob.children[0]) return { knob: true };
+    if (knob && hit.object === knob.children[0]) return { knob: true, still: true };
+    if (hit.object === listPanel) {
+      const k = list.at(state.c, hit.uv.x, hit.uv.y);
+      return k < 0 ? null : { list: k, still: true };
+    }
     return pickables.find((p) => p.cap === hit.object);
   };
-  const target = (item) => (item.kind === 'cat' ? [item.c, 0] : [L.pool ? state.c : item.c, item.i]);
+  const target = (item) => {
+    if (item.kind !== 'cat') return [item.c, item.i];
+    // pressing the live bank's key again steps to its next skill
+    return item.c === state.c ? [item.c, (state.i + 1) % banks[item.c].keys.length] : [item.c, 0];
+  };
   let down = null, hover = null;
   const onMove = (e) => {
     const r = canvas.getBoundingClientRect();
@@ -512,7 +589,7 @@ export async function createConsole(canvas, { banks, compact = false, onPick } =
       const h = hitAt(e);
       if (h) canvas.setAttribute('data-cursor', ''); else canvas.removeAttribute('data-cursor');
       canvas.style.cursor = h ? 'pointer' : '';
-      if (h && !h.knob && h !== hover && h.kind === 'key') {
+      if (h && !h.still && h !== hover && h.kind === 'key') {
         const [c, i] = target(h);
         onPick?.(c, i, 'hover');
       }
@@ -522,19 +599,20 @@ export async function createConsole(canvas, { banks, compact = false, onPick } =
   const onDown = (e) => {
     const h = hitAt(e);
     down = h ? { h, x: e.clientX, y: e.clientY } : null;
-    if (h && !h.knob) travel(h, true);
+    if (h && !h.still) travel(h, true);
   };
   const onCancel = () => {
-    if (down && !down.h.knob) travel(down.h, false);
+    if (down && !down.h.still) travel(down.h, false);
     down = null;
   };
   const onUp = (e) => {
     if (!down) return;
     const { h, x, y } = down;
     down = null;
-    if (!h.knob) travel(h, false);
+    if (!h.still) travel(h, false);
     if (Math.hypot(e.clientX - x, e.clientY - y) > 12) return;
     if (h.knob) { onPick?.((state.c + 1) % banks.length, 0, 'tap'); return; }
+    if (h.list !== undefined) { onPick?.(state.c, h.list, 'tap'); return; }
     const [c, i] = target(h);
     onPick?.(c, i, 'tap');
   };
@@ -549,7 +627,7 @@ export async function createConsole(canvas, { banks, compact = false, onPick } =
     select,
     // a key pressed from the real keyboard
     press(c, i) {
-      const item = L.pool ? keyCaps[i] : keyCaps.find((k) => k.c === c && k.i === i);
+      const item = L.list ? catCaps[c] : keyCaps.find((k) => k.c === c && k.i === i);
       if (item) pressKey(item);
     },
     setRise(v) { state.rise = v; kick(); },

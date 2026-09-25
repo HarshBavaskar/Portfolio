@@ -767,9 +767,6 @@ export async function createPcbCard(canvas, { still = false } = {}) {
     dies.instanceColor.needsUpdate = true;
   };
   light(0);
-  const spill = new THREE.PointLight('#ff6a24', 0, 1.2, 2);
-  spill.position.set(mcx, mcy, z0 + 0.35);
-  card.add(spill);
 
   /* ── Motion ── */
   const state = { enter: 0, flip: 0, flipTo: 0, drag: 0, dragV: 0, tx: 0, ty: 0, px: 0, py: 0, press: 0 };
@@ -820,7 +817,6 @@ export async function createPcbCard(canvas, { still = false } = {}) {
     if (key !== drawn) { drawn = key; screen.draw(prog, cursor); }
     const n = Math.round(Math.min(1, Math.max(0, (since - 1.1) / 1.1)) * cols);
     light(n);
-    spill.intensity = (n / cols) * 0.12;
   }
   boot();
 

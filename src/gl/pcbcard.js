@@ -8,8 +8,9 @@ import { CARD, qrMatrix } from '../lib/card';
   The contact card as a real circuit board, 1 unit ≈ 25 mm. Black solder
   mask with an orange-peel clear coat over copper you can feel, gold (ENIG)
   pads and edge fingers, plated holes drilled right through, a routed
-  fibreglass edge, and soldered parts that cast shadows. The H of the
-  silkscreen logo is crossed by a real orange LED.
+  fibreglass edge, and soldered parts that cast shadows. The logo boots on
+  a small TFT, the name is lit on a micro-LED matrix, and the contact
+  details and QR are laser-engraved into the mask on the back.
 */
 
 const coarse = matchMedia('(pointer: coarse)').matches;
@@ -21,7 +22,6 @@ const SPANX = maxX - minX, SPANY = maxY - minY;
 const PX = coarse ? 420 : 600; // texture pixels per unit
 
 const GOLD = '#b8862f', MASK = '#0b0c0d', COPPER = '#191d1f', SILK = '#ecebe6';
-const LOGO = { x: -1.45, y: 0.8, s: 0.34 / 28 }; // HB glyph origin + scale
 const font = (w, px, mono) => `${w} ${px}px ${mono ? '"Geist Mono", ui-monospace, monospace' : 'Geist, "Helvetica Neue", Arial, sans-serif'}`;
 
 // where the parts sit, shared by the artwork and the 3D parts
@@ -31,9 +31,32 @@ const XTAL = { x: 0.1, y: 0.62 };
 const BTN = { x: 1.42, y: 0.4 };
 const LED = { x: 1.38, y: 0.62 };
 const HOLES = Array.from({ length: 6 }, (_, k) => [0.12 + k * 0.2, -0.8]);
-const DRILL = 0.028;
+const DRILL = 0.024; // a 1.2 mm hole: header pins go through
 const FINGERS = [-0.2, -0.067, 0.067, 0.2];
 const CORNERS = [[-1, -1], [-1, 1], [1, -1], [1, 1]];
+const EDGE = -1.52; // the left column lines up on this
+const TFT = { x: -0.98, y: 0.62, w: 1.08, h: 0.6 }; // a 1.14" 240×135 panel
+const FPC = { x: -0.26, y: 0.59, pads: [0.5, 0.56, 0.62, 0.68] }; // its flex connector
+const PITCH = 0.019; // micro-LED matrix: 0.48 mm pitch
+const MATRIX = { x: EDGE + 0.015, y: 0.155 }; // top-left LED
+// the HB mark, in its 28-unit glyph box
+const INK = [['M4 3.5v21', 21], ['M13 3.5v21', 21], ['M13 3.5h4.5a5.25 5.25 0 0 1 0 10.5H13', 25.5], ['M13 14h5.5a5.25 5.25 0 0 1 0 10.5H13', 27.5]];
+// 5×7 dot-matrix glyphs, enough for the name
+const GLYPHS = {
+  H: ['10001', '10001', '10001', '11111', '10001', '10001', '10001'],
+  A: ['01110', '10001', '10001', '11111', '10001', '10001', '10001'],
+  R: ['11110', '10001', '10001', '11110', '10100', '10010', '10001'],
+  S: ['01111', '10000', '10000', '01110', '00001', '00001', '11110'],
+  B: ['11110', '10001', '10001', '11110', '10001', '10001', '11110'],
+  V: ['10001', '10001', '10001', '10001', '10001', '01010', '00100'],
+  K: ['10001', '10010', '10100', '11000', '10100', '10010', '10001'],
+};
+// the name as columns of lit dots
+const NAME = [...CARD.name.toUpperCase()].flatMap((ch, i) => {
+  const g = GLYPHS[ch] || Array(7).fill('00000');
+  const cols = Array.from({ length: 5 }, (_, c) => g.map((row) => row[c] === '1'));
+  return i ? [Array(7).fill(false), ...cols] : cols;
+});
 const pin = (side, k) => {
   const off = -0.1575 + k * 0.045, e = CHIP.s / 2 + 0.03;
   return [[CHIP.x + e, CHIP.y + off], [CHIP.x - e, CHIP.y + off], [CHIP.x + off, CHIP.y + e], [CHIP.x + off, CHIP.y - e]][side];
@@ -92,6 +115,16 @@ function surface() {
   for (let x = 0; x < bump.width; x += PX * 0.02) P.h.fillRect(x, 0, PX * 0.008, bump.height);
   for (let y = 0; y < bump.height; y += PX * 0.02) P.h.fillRect(0, y, bump.width, PX * 0.008);
   P.h.globalAlpha = 1;
+  // the satin varies a little across the board, as sprayed mask does
+  for (let i = 0; i < 60; i++) {
+    const x = rnd() * orm.width, y = rnd() * orm.height, r = PX * (0.08 + rnd() * 0.25);
+    const g = P.b.createRadialGradient(x, y, 0, x, y, r);
+    const v = rnd() > 0.5 ? 150 : 95;
+    g.addColorStop(0, `rgba(255,${v},0,0.35)`);
+    g.addColorStop(1, `rgba(255,${v},0,0)`);
+    P.b.fillStyle = g;
+    P.b.fillRect(x - r, y - r, r * 2, r * 2);
+  }
   return P;
 }
 
@@ -112,7 +145,35 @@ const gold = (P, draw) => { layer(P.a, GOLD, draw); layer(P.b, 'rgb(0,105,255)',
 // ink sits on top of the mask: matte, no clear coat, raised
 const silk = (P, draw) => { layer(P.a, SILK, draw); layer(P.b, 'rgb(30,175,0)', draw); layer(P.h, 'rgb(170,170,170)', draw); };
 // copper under the mask: barely a colour, but its edges catch the light
-const copper = (P, draw) => { layer(P.a, COPPER, draw); layer(P.h, 'rgb(150,150,150)', draw); };
+const copper = (P, draw) => { layer(P.a, COPPER, draw); layer(P.h, 'rgb(158,158,158)', draw); };
+
+/* Laser engraving: the beam ablates the mask down to a satin metal floor.
+   The cut is recessed; its top-left wall falls in shadow and its
+   bottom-right wall catches the light. `draw` paints white onto a mask. */
+function engrave(P, draw, depth = 0.0032) {
+  const w = P.col.width, h = P.col.height, d = depth * PX;
+  const sheet = () => Object.assign(document.createElement('canvas'), { width: w, height: h });
+  const mask = sheet(), m = mask.getContext('2d');
+  m.fillStyle = m.strokeStyle = '#fff';
+  draw(m);
+  // one scratch sheet, reused for each pass
+  const scratch = sheet(), g = scratch.getContext('2d');
+  const pass = (target, style, shift = 0) => {
+    g.globalCompositeOperation = 'copy';
+    g.drawImage(mask, 0, 0);
+    if (shift) { g.globalCompositeOperation = 'destination-out'; g.drawImage(mask, shift, shift); }
+    g.globalCompositeOperation = 'source-in';
+    g.fillStyle = style;
+    g.fillRect(0, 0, w, h);
+    target.drawImage(scratch, 0, 0);
+  };
+  pass(P.a, '#a98c5a');
+  pass(P.a, 'rgba(18,12,4,0.9)', d);
+  pass(P.a, 'rgba(255,238,200,0.6)', -d);
+  pass(P.b, 'rgb(0,140,255)');
+  pass(P.h, 'rgb(38,38,38)');
+  mask.width = scratch.width = 0; // hand the memory back now
+}
 
 function ring(P, x, y, r, drill) {
   gold(P, (c) => { c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fill(); });
@@ -120,6 +181,8 @@ function ring(P, x, y, r, drill) {
     layer(P.a, '#050505', (c) => { c.beginPath(); c.arc(x, y, r * 0.45, 0, Math.PI * 2); c.fill(); });
     return;
   }
+  // the plated lip darkens as it turns down into the hole
+  layer(P.a, '#4a3413', (c) => { c.beginPath(); c.arc(x, y, drill * 1.22, 0, Math.PI * 2); c.fill(); });
   // drilled clean through: the colour map goes transparent there
   P.a.save();
   P.a.globalCompositeOperation = 'destination-out';
@@ -171,9 +234,14 @@ function frontFace() {
     const [p0x, p0y] = pin(3, 0);
     path(c, [[p0x, p0y], [p0x, -0.05], [0.39, -0.05]]); // decoupling caps
     path(c, [[0.23, -0.05], [0.33, -0.05]]);
-    [2, 4, 6].forEach((k, i) => {
+    [0, 1, 2].forEach((k, i) => {
       const [px, py] = pin(1, k);
       path(c, [[px, py], [0.1 - i * 0.12, py], [-0.1 - i * 0.12, py - 0.2], [-0.1 - i * 0.12, -0.55 - i * 0.06]]);
+    });
+    // SPI out to the display's flex connector
+    FPC.pads.forEach((fy, i) => {
+      const [px, py] = pin(1, 4 + i), tx = 0.1 + i * 0.06;
+      path(c, [[px, py], [tx, py], [tx - (fy - py), fy], [FPC.x + 0.07, fy]]);
     });
     // a ground pour along the lower edge, stitched with vias
     c.globalAlpha = 0.6;
@@ -195,6 +263,8 @@ function frontFace() {
     });
     pad(LED.x - 0.03, LED.y, 0.03, 0.04);
     pad(LED.x + 0.03, LED.y, 0.03, 0.04);
+    FPC.pads.forEach((fy) => pad(FPC.x + 0.065, fy, 0.04, 0.026));
+    [-1, 1].forEach((s) => pad(FPC.x, FPC.y + s * 0.155, 0.09, 0.03));
     FINGERS.forEach((fy) => { c.beginPath(); c.roundRect(X(1.8), Y(fy + 0.045), L(0.36), L(0.09), L(0.015)); c.fill(); });
     [[1.55, 0.9], [-1.55, -0.62]].forEach(([x, y]) => { c.beginPath(); c.arc(X(x), Y(y), L(0.022), 0, Math.PI * 2); c.fill(); });
   });
@@ -207,6 +277,9 @@ function frontFace() {
 
   // contact shadows under the parts
   ao(P, X(CHIP.x), Y(CHIP.y), L(0.4), L(0.4), L(0.05));
+  ao(P, X(TFT.x), Y(TFT.y), L(TFT.w), L(TFT.h), L(0.06));
+  ao(P, X(MATRIX.x + (NAME.length - 1) * PITCH / 2), Y(MATRIX.y - 3 * PITCH), L(NAME.length * PITCH + 0.05), L(7 * PITCH + 0.05), L(0.04), 0.7);
+  ao(P, X(FPC.x), Y(FPC.y), L(0.08), L(0.28), L(0.03));
   ao(P, X(XTAL.x), Y(XTAL.y), L(0.2), L(0.1), L(0.03));
   ao(P, X(BTN.x), Y(BTN.y), L(0.15), L(0.11), L(0.03));
   PASSIVES.forEach(([x, y]) => ao(P, X(x), Y(y), L(0.06), L(0.034), L(0.02), 0.7));
@@ -215,20 +288,9 @@ function frontFace() {
   silk(P, (c) => {
     c.lineWidth = L(0.012);
     c.lineCap = 'butt';
-    // the HB mark; its crossbar is left for the LED
-    c.save();
-    c.translate(X(LOGO.x), Y(LOGO.y));
-    c.scale(LOGO.s * PX, LOGO.s * PX);
-    c.lineWidth = 2.6;
-    c.lineCap = 'square';
-    ['M4 3.5v21', 'M13 3.5v21', 'M13 3.5h4.5a5.25 5.25 0 0 1 0 10.5H13', 'M13 14h5.5a5.25 5.25 0 0 1 0 10.5H13'].forEach((d) => c.stroke(new Path2D(d)));
-    c.restore();
-
-    c.font = font(700, L(0.17), false);
-    c.fillText(CARD.name.toUpperCase(), X(-1.46), Y(-0.2));
     c.font = font(500, L(0.052), true);
-    c.fillText('ROBOTICS · EMBEDDED SYSTEMS · COMPUTER VISION', X(-1.45), Y(-0.34));
-    c.fillText('HB-26 · REV A · MUMBAI', X(-1.45), Y(-0.73));
+    c.fillText('ROBOTICS · EMBEDDED SYSTEMS · COMPUTER VISION', X(EDGE), Y(-0.07));
+    c.fillText('HB-26 · REV A · MUMBAI', X(EDGE), Y(-0.73));
     c.font = font(500, L(0.045), true);
     ['3V3', 'GND', 'TX', 'RX', 'IO0', 'EN'].forEach((t, k) => {
       const w = c.measureText(t).width;
@@ -237,7 +299,7 @@ function frontFace() {
     c.strokeRect(X(0.0), Y(-0.69), L(1.24), L(0.22));
     c.strokeRect(X(HOLES[0][0] - 0.07), Y(-0.73), L(0.14), L(0.14)); // pin 1 gets a square
     [['U1', CHIP.x - 0.22, CHIP.y + 0.3], ['Y1', -0.05, 0.75], ['D1', 1.3, 0.73], ['J1', 1.4, -0.52], ['J2', 1.27, -0.83],
-      ['C1', 0.17, -0.13], ['C2', 0.33, -0.13], ['R1', 0.96, 0.7], ['R2', 0.96, 0.42], ['SW1', BTN.x - 0.08, BTN.y + 0.12], ['BOOT', BTN.x - 0.08, BTN.y - 0.15]]
+      ['C1', 0.17, -0.13], ['C2', 0.33, -0.13], ['LCD1', EDGE, 0.955], ['LED1', EDGE, 0.235], ['J3', FPC.x - 0.04, 0.765], ['R1', 0.96, 0.7], ['R2', 0.96, 0.42], ['SW1', BTN.x - 0.08, BTN.y + 0.12], ['BOOT', BTN.x - 0.08, BTN.y - 0.15]]
       .forEach(([t, x, y]) => c.fillText(t, X(x), Y(y)));
     c.strokeRect(X(CHIP.x - 0.26), Y(CHIP.y + 0.26), L(0.52), L(0.52));
     c.beginPath(); c.arc(X(CHIP.x - 0.3), Y(CHIP.y + 0.3), L(0.014), 0, Math.PI * 2); c.fill(); // pin 1
@@ -256,9 +318,9 @@ function backFace() {
   const { X, Y, L } = toPx(-maxX);
   // an antenna coil around the edge, in copper under the mask
   copper(P, (c) => {
-    c.lineWidth = L(0.018);
-    for (let i = 0; i < 4; i++) {
-      const d = 0.1 + i * 0.045;
+    c.lineWidth = L(0.016);
+    for (let i = 0; i < 3; i++) {
+      const d = 0.06 + i * 0.028;
       c.beginPath();
       c.roundRect(X(-W0 / 2 + d), Y(H0 / 2 - d), L(W0 - d * 2), L(H0 - d * 2), L(0.1));
       c.stroke();
@@ -270,22 +332,21 @@ function backFace() {
   HOLES.forEach(([x, y]) => ring(P, X(-x), Y(y), L(0.052), L(DRILL)));
   for (let i = 0; i < 9; i++) tented(P, X(1.55 - i * 0.16), Y(-0.89), L(0.02));
 
-  // QR: silkscreen ground, mask modules, so it scans the right way round
+  // the QR is engraved as a field with the dark modules left standing in
+  // mask, so it reads the right way round to a camera
   const { size, on } = qrMatrix();
-  const q = 0.84, qx = 0.6, qy = 0.44, cell = q / (size + 2);
-  silk(P, (c) => c.fillRect(X(qx), Y(qy), L(q), L(q)));
-  const mod = (c) => {
-    for (let r = 0; r < size; r++) for (let k = 0; k < size; k++) if (on(r, k)) c.fillRect(X(qx + (k + 1) * cell), Y(qy - (r + 1) * cell), L(cell) + 0.6, L(cell) + 0.6);
-  };
-  layer(P.a, MASK, mod);
-  layer(P.b, 'rgb(255,120,0)', mod);
-  layer(P.h, 'rgb(110,110,110)', mod);
-
+  const q = 0.88, qx = 0.58, qy = 0.46, quiet = 3, cell = q / (size + quiet * 2);
   const gap = CARD.rows.length > 4 ? 0.245 : 0.3;
-  silk(P, (c) => {
+  // shallow, so the walls don't eat into the light modules; a 3-module quiet zone
+  engrave(P, (c) => {
+    c.fillRect(X(qx), Y(qy), L(q), L(q));
+    c.globalCompositeOperation = 'destination-out';
+    for (let r = 0; r < size; r++) for (let k = 0; k < size; k++) if (on(r, k)) c.fillRect(X(qx + (k + quiet) * cell), Y(qy - (r + quiet) * cell), L(cell) + 0.6, L(cell) + 0.6);
+  }, 0.0015);
+  engrave(P, (c) => {
     c.font = font(500, L(0.048), true);
     c.fillText('CONTACT', X(-1.36), Y(0.74));
-    c.fillText('SCAN → PORTFOLIO', X(qx), Y(qy - q - 0.1));
+    c.fillText('SCAN → PORTFOLIO', X(qx), Y(qy - q - 0.08));
     CARD.rows.forEach(([k, v], i) => {
       const y = 0.46 - i * gap;
       c.font = font(500, L(0.045), true);
@@ -293,11 +354,20 @@ function backFace() {
       c.font = font(600, L(0.085), false);
       c.fillText(v, X(-1.36), Y(y - 0.12));
     });
+    c.lineWidth = L(0.012);
+    c.strokeRect(X(-1.42), Y(0.86), L(0.06), L(0.06));
+  });
+
+  silk(P, (c) => {
+    // the same six holes, labelled from this side too
+    c.font = font(500, L(0.036), true);
+    ['3V3', 'GND', 'TX', 'RX', 'IO0', 'EN'].forEach((t, k) => {
+      const w = c.measureText(t).width;
+      c.fillText(t, X(-HOLES[k][0]) - w / 2, Y(-0.912));
+    });
     c.font = font(500, L(0.042), true);
     c.fillText('HB-26 · ANT1 · SN 0001', X(qx), Y(-0.66));
     c.fillText('94V-0 · 2626', X(qx), Y(-0.74));
-    c.lineWidth = L(0.01);
-    c.strokeRect(X(-1.42), Y(0.86), L(0.06), L(0.06));
   });
   return P;
 }
@@ -396,6 +466,86 @@ function fr4() {
   // side-wall v runs 1 − z across the board's depth; map exactly that band
   t.repeat.set(5, 1 / T);
   t.offset.set(0, -(1 - T + BEV) / T);
+  return t;
+}
+
+/* The TFT's picture: drawn at the panel's 240×135, then spread over RGB
+   subpixel stripes so it reads as a real LCD up close. */
+function display(aniso) {
+  const lw = 240, lh = 135;
+  const src = Object.assign(document.createElement('canvas'), { width: lw, height: lh });
+  const out = Object.assign(document.createElement('canvas'), { width: lw * 3, height: lh * 3 });
+  const g = src.getContext('2d', { willReadFrequently: true }), o = out.getContext('2d');
+  const img = o.createImageData(lw * 3, lh * 3), px = img.data;
+  for (let i = 3; i < px.length; i += 4) px[i] = 255;
+  const tex = new THREE.CanvasTexture(out);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = aniso;
+  const total = INK.reduce((s, [, l]) => s + l, 0) + 9;
+  const draw = (prog, cursor) => {
+    g.fillStyle = '#07090b';
+    g.fillRect(0, 0, lw, lh);
+    g.font = '600 9px "Geist Mono", ui-monospace, monospace';
+    g.fillStyle = '#62666d';
+    g.fillText('HB-26', 8, 14);
+    g.textAlign = 'right';
+    g.fillText('READY', 222, 14);
+    g.textAlign = 'left';
+    g.fillStyle = '#ff5b14';
+    g.beginPath(); g.arc(230, 11, 2.6, 0, Math.PI * 2); g.fill();
+    // the mark draws itself, stroke by stroke
+    const s = 2.5;
+    g.save();
+    g.translate(120 - 13.9 * s, 66 - 14 * s);
+    g.scale(s, s);
+    g.lineCap = 'square';
+    let at = prog * total;
+    const stroke = (d, len, style, width) => {
+      const part = Math.max(0, Math.min(1, at / len));
+      at -= len;
+      if (!part) return;
+      g.setLineDash([len * part, 999]);
+      g.strokeStyle = style;
+      g.lineWidth = width;
+      g.stroke(new Path2D(d));
+    };
+    INK.forEach(([d, len]) => stroke(d, len, '#ecebe6', 2.6));
+    stroke('M4 14h9', 9, '#ff5b14', 3.4);
+    g.restore();
+    g.font = '500 9px "Geist Mono", ui-monospace, monospace';
+    g.fillStyle = '#8b8f96';
+    const line = prog < 1 ? '> boot' : '> hello, world';
+    g.fillText(line, 8, 126);
+    if (cursor) g.fillRect(10 + g.measureText(line).width, 118, 5, 9);
+    // subpixels: R, G, B stripes, with a dark row between pixel rows
+    const d = g.getImageData(0, 0, lw, lh).data, W3 = lw * 3;
+    for (let y = 0; y < lh; y++) for (let x = 0; x < lw; x++) {
+      const i = (y * lw + x) * 4;
+      for (let j = 0; j < 3; j++) {
+        const k = j === 2 ? 0.3 : 1, row = ((y * 3 + j) * W3 + x * 3) * 4;
+        for (let c = 0; c < 3; c++) {
+          const o4 = row + c * 4;
+          px[o4] = d[i] * k * (c === 0 ? 1 : 0.28);
+          px[o4 + 1] = d[i + 1] * k * (c === 1 ? 1 : 0.28);
+          px[o4 + 2] = d[i + 2] * k * (c === 2 ? 1 : 0.28);
+        }
+      }
+    }
+    o.putImageData(img, 0, 0);
+    tex.needsUpdate = true;
+  };
+  return { tex, draw };
+}
+
+function flexArt() {
+  const c = Object.assign(document.createElement('canvas'), { width: 64, height: 64 });
+  const g = c.getContext('2d');
+  g.fillStyle = '#c97a1c';
+  g.fillRect(0, 0, 64, 64);
+  g.fillStyle = 'rgba(255,214,150,0.55)';
+  for (let i = 0; i < 8; i++) g.fillRect(0, 5 + i * 7.5, 64, 2);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
   return t;
 }
 
@@ -510,7 +660,7 @@ export async function createPcbCard(canvas, { still = false } = {}) {
     g.translate(x, y, 0);
     return g;
   }));
-  card.add(new THREE.Mesh(barrels, new THREE.MeshStandardMaterial({ color: '#d9a651', metalness: 1, roughness: 0.3, side: THREE.DoubleSide })));
+  card.add(new THREE.Mesh(barrels, new THREE.MeshStandardMaterial({ color: '#8a6428', metalness: 1, roughness: 0.45, side: THREE.DoubleSide, envMapIntensity: 0.5 })));
 
   /* ── Parts ── */
   const z0 = T / 2;
@@ -564,17 +714,61 @@ export async function createPcbCard(canvas, { still = false } = {}) {
   const plunger = add(new THREE.CylinderGeometry(0.03, 0.03, 0.016, 28).rotateX(Math.PI / 2), new THREE.MeshStandardMaterial({ color: '#111', roughness: 0.5 }), BTN.x, BTN.y, 0.032);
   CORNERS.forEach(([sx, sy]) => add(new THREE.BoxGeometry(0.036, 0.018, 0.006), tin, BTN.x + sx * 0.09, BTN.y + sy * 0.04, 0.003));
 
-  // LEDs: the logo's crossbar, and a blinking status light, each on a white package
+  // D1: a status LED on a white package
   const white = new THREE.MeshStandardMaterial({ color: '#ece8de', roughness: 0.45 });
-  const lens = () => new THREE.MeshPhysicalMaterial({ color: '#ffb58c', emissive: '#ff5b14', emissiveIntensity: 1.2, roughness: 0.15, clearcoat: 1 });
-  const bx = LOGO.x + 8.5 * LOGO.s, by = LOGO.y - 14 * LOGO.s;
-  add(rbox(9 * LOGO.s + 0.01, 0.05, 0.012, 0.003), white, bx, by, 0.006);
-  const logoLed = add(rbox(9 * LOGO.s, 0.04, 0.012, 0.004), lens(), bx, by, 0.016);
   add(rbox(0.064, 0.034, 0.012, 0.003), white, LED.x, LED.y, 0.006);
-  const statusLed = add(rbox(0.05, 0.028, 0.01, 0.004), lens(), LED.x, LED.y, 0.015);
+  const statusLed = add(rbox(0.05, 0.028, 0.01, 0.004), new THREE.MeshPhysicalMaterial({ color: '#ffb58c', emissive: '#ff5b14', emissiveIntensity: 1.2, roughness: 0.15, clearcoat: 1 }), LED.x, LED.y, 0.015);
   [-1, 1].forEach((s) => add(new THREE.BoxGeometry(0.012, 0.036, 0.006), tin, LED.x + s * 0.036, LED.y, 0.003));
-  const spill = new THREE.PointLight('#ff6a24', 0.35, 0.9, 2);
-  spill.position.set(bx, by, z0 + 0.12);
+
+  // LCD1: backlight frame, cover glass, the lit panel, and its amber flex
+  add(rbox(TFT.w, TFT.h, 0.026, 0.01), new THREE.MeshStandardMaterial({ color: '#d8d8d4', roughness: 0.5 }), TFT.x, TFT.y, 0.013);
+  add(rbox(TFT.w - 0.012, TFT.h - 0.012, 0.012, 0.004), new THREE.MeshPhysicalMaterial({ color: '#050607', roughness: 0.06, clearcoat: 1, clearcoatRoughness: 0.03 }), TFT.x, TFT.y, 0.032);
+  const screen = display(aniso);
+  const panel = add(new THREE.PlaneGeometry(0.92, 0.5175), new THREE.MeshPhysicalMaterial({
+    color: '#000', emissive: '#fff', emissiveMap: screen.tex, emissiveIntensity: 2.2,
+    roughness: 0.05, clearcoat: 1, clearcoatRoughness: 0.03,
+  }), TFT.x - 0.035, TFT.y, 0.0385);
+  panel.castShadow = false;
+  const flex = new THREE.PlaneGeometry(0.2, 0.2, 16, 1);
+  const fp = flex.attributes.position;
+  for (let i = 0; i < fp.count; i++) {
+    const u = (fp.getX(i) + 0.1) / 0.2;
+    fp.setZ(i, 0.005 + 0.018 * (2 * u - 1) ** 2 - (u > 0.5 ? 0.004 : 0));
+  }
+  flex.computeVertexNormals();
+  add(flex, new THREE.MeshPhysicalMaterial({ map: flexArt(), roughness: 0.3, clearcoat: 0.6, side: THREE.DoubleSide, transparent: true, opacity: 0.94 }), TFT.x + TFT.w / 2 - 0.06 + 0.1, FPC.y, 0);
+  // J3: the flex connector, with its brown locking flap
+  add(rbox(0.08, 0.28, 0.026, 0.004), new THREE.MeshStandardMaterial({ color: '#1b1b1b', roughness: 0.55 }), FPC.x, FPC.y, 0.013);
+  add(rbox(0.034, 0.28, 0.01, 0.003), new THREE.MeshStandardMaterial({ color: '#4a3220', roughness: 0.4 }), FPC.x + 0.02, FPC.y, 0.031);
+  FPC.pads.forEach((fy) => add(new THREE.BoxGeometry(0.03, 0.012, 0.006), tin, FPC.x + 0.06, fy, 0.003));
+
+  // LED1: a micro-LED matrix on its own black carrier, spelling the name
+  const cols = NAME.length;
+  const mw = cols * PITCH + 0.04, mh = 7 * PITCH + 0.04;
+  const mcx = MATRIX.x + (cols - 1) * PITCH / 2, mcy = MATRIX.y - 3 * PITCH;
+  add(rbox(mw, mh, 0.012, 0.004), new THREE.MeshPhysicalMaterial({ color: '#0e0f10', roughness: 0.35, clearcoat: 0.8, clearcoatRoughness: 0.1 }), mcx, mcy, 0.006);
+  const count = cols * 7;
+  const pkgs = new THREE.InstancedMesh(new THREE.BoxGeometry(0.014, 0.014, 0.005), new THREE.MeshStandardMaterial({ color: '#1a1a1a', roughness: 0.35 }), count);
+  const dies = new THREE.InstancedMesh(new THREE.BoxGeometry(0.011, 0.011, 0.002), new THREE.MeshBasicMaterial({ color: '#fff', toneMapped: false }), count);
+  const mtx = new THREE.Matrix4();
+  for (let c = 0; c < cols; c++) for (let r = 0; r < 7; r++) {
+    const i = c * 7 + r, x = MATRIX.x + c * PITCH, y = MATRIX.y - r * PITCH;
+    pkgs.setMatrixAt(i, mtx.makeTranslation(x, y, z0 + 0.0145));
+    dies.setMatrixAt(i, mtx.makeTranslation(x, y, z0 + 0.0175));
+  }
+  pkgs.castShadow = pkgs.receiveShadow = true;
+  card.add(pkgs, dies);
+  const LIT = new THREE.Color(1, 0.3, 0.05), DARK = new THREE.Color(0.045, 0.042, 0.038);
+  let shown = -1;
+  const light = (n) => {
+    if (n === shown) return;
+    shown = n;
+    for (let c = 0; c < cols; c++) for (let r = 0; r < 7; r++) dies.setColorAt(c * 7 + r, c < n && NAME[c][r] ? LIT : DARK);
+    dies.instanceColor.needsUpdate = true;
+  };
+  light(0);
+  const spill = new THREE.PointLight('#ff6a24', 0, 1.2, 2);
+  spill.position.set(mcx, mcy, z0 + 0.35);
   card.add(spill);
 
   /* ── Motion ── */
@@ -607,14 +801,29 @@ export async function createPcbCard(canvas, { still = false } = {}) {
     last = now;
     t += dt;
     statusLed.material.emissiveIntensity = Math.sin(t * 5) > 0.55 ? 2.4 : 0.15;
-    logoLed.material.emissiveIntensity = 1.1 + Math.sin(t * 1.6) * 0.35;
-    spill.intensity = 0.28 + Math.sin(t * 1.6) * 0.1;
+    boot();
     // the switch clicks down on a flip and springs back
     state.press *= 0.86;
     plunger.position.z = z0 + 0.032 - state.press * 0.009;
     pose();
     renderer.render(scene, camera);
   }
+  // once the card has swung in: the logo draws on the screen, then the name types across the matrix
+  let bootAt = still ? -99 : null, drawn = '';
+  function boot() {
+    const now = performance.now() / 1000; // wall time: the boot takes the same on any frame rate
+    if (bootAt === null && state.enter > 0.85) bootAt = now;
+    const since = bootAt === null ? 0 : now - bootAt;
+    const prog = Math.min(1, Math.max(0, since / 1.5));
+    const cursor = prog >= 1 && Math.floor(now / 0.53) % 2 === 0;
+    const key = `${prog.toFixed(3)}${cursor}`;
+    if (key !== drawn) { drawn = key; screen.draw(prog, cursor); }
+    const n = Math.round(Math.min(1, Math.max(0, (since - 1.1) / 1.1)) * cols);
+    light(n);
+    spill.intensity = (n / cols) * 0.12;
+  }
+  boot();
+
   const io = new IntersectionObserver(([e]) => {
     visible = e.isIntersecting;
     cancelAnimationFrame(raf);
@@ -622,6 +831,8 @@ export async function createPcbCard(canvas, { still = false } = {}) {
   });
   const ro = new ResizeObserver(resize);
   resize();
+  // compile shaders in parallel where the GPU allows, so the first frame doesn't stall the page
+  await renderer.compileAsync(scene, camera);
   io.observe(canvas);
   ro.observe(canvas);
 
@@ -667,6 +878,8 @@ export async function createPcbCard(canvas, { still = false } = {}) {
       const g = out.getContext('2d');
       g.fillStyle = '#0e0e0d';
       g.fillRect(0, 0, out.width, out.height);
+      bootAt = -1e9;
+      boot();
       const keep = { ...state }, keepPR = renderer.getPixelRatio();
       renderer.setPixelRatio(1);
       renderer.setSize(1700, 1100, false);

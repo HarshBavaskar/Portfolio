@@ -15,7 +15,7 @@ Robotics, embedded systems and computer vision. Live at [harshbavaskar.github.io
 | 06 | Record | Awards, education, languages. |
 | 07 | Contact | A dark sheet that lifts over the page. |
 
-Small things: optional synthesised UI clicks (Sound in the nav), a live Mumbai clock, and **press G** to see the 12-column grid.
+Small things: optional synthesised UI clicks (Sound in the nav) and a live Mumbai clock.
 
 ## Early-access pages
 

@@ -5,7 +5,6 @@ import { wipeArrive } from './early/wipe';
 import Cursor from './components/Cursor';
 import Nav from './components/Nav';
 import GLStage from './components/GLStage';
-import GridOverlay from './components/GridOverlay';
 import Hero from './sections/Hero';
 import Rover from './sections/Rover';
 import About from './sections/About';
@@ -84,7 +83,6 @@ export default function App() {
       <Cursor />
       <Nav />
       <GLStage />
-      <GridOverlay />
       <main>
         <Hero ready={ready} />
         <Rover />

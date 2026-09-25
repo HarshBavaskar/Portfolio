@@ -296,5 +296,5 @@ export const record = [
   { k: 'Award', v: '5th global rank', d: 'RC Division, NASA Human Exploration Rover Challenge', y: '2025' },
   { k: 'Award', v: 'Social Media Award', d: 'University Division, NASA HERC', y: '2025' },
   { k: 'Education', v: 'BTech, Computer Science — AI & ML', d: 'Atlas Skilltech University, Mumbai', y: '2024 — 28' },
-  { k: 'Languages', v: 'English, Hindi, Marathi, German', d: 'Professional · Native · Native · Elementary', y: '—' },
+  { k: 'Languages', v: 'English, Hindi, Marathi', d: 'Professional · Native · Native', y: '—' },
 ];
